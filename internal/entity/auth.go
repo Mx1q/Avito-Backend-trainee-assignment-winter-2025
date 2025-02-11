@@ -4,19 +4,21 @@ import "context"
 
 type Pass struct {
 	Password string
-	IsHashed bool
+	//IsHashed bool
+	HashedPassword string
 }
 
 type Auth struct {
 	Username string
 	//Password string
-	Password Pass
+	Password string
 }
 
 type IAuthRepository interface {
-	Auth(ctx context.Context, authInfo *Auth) error
+	GetByUsername(ctx context.Context, username string) (*Auth, error)
+	Register(ctx context.Context, authInfo *Auth) error
 }
 
 type IAuthService interface {
-	Auth(ctx context.Context, authInfo *Auth) error
+	Auth(ctx context.Context, authInfo *Auth) (string, error) // sing up if not exists
 }

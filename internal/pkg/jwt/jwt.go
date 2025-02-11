@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func createToken(username string, jwtKey string) (string, error) {
+func CreateToken(username string, jwtKey string) (string, error) {
 	token := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,
 		jwt.MapClaims{

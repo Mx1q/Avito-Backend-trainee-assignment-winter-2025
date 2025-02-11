@@ -28,7 +28,7 @@ func isValid(authInfo entity.Auth) error {
 	if authInfo.Username == "" {
 		return fmt.Errorf("empty username")
 	}
-	if authInfo.Password.Password == "" {
+	if authInfo.Password == "" {
 		return fmt.Errorf("empty password")
 	}
 	return nil
@@ -42,24 +42,45 @@ func (s *AuthService) Auth(ctx context.Context, authInfo *entity.Auth) (string, 
 		return "", err
 	}
 
-	hashedPass, err := s.hasher.HashPassword(authInfo.Password.Password)
-	if err != nil {
-		s.logger.Warnf("User %s hashing pass: %v", authInfo.Username, err)
-		return "", err
-	}
-	authInfo.Password.HashedPassword = hashedPass
-
-	err = s.authRepo.Auth(ctx, authInfo)
+	userDb, err := s.authRepo.GetByUsername(ctx, authInfo.Username)
 	if err != nil {
 		s.logger.Warnf("User %s trying to login: %v", authInfo.Username, err)
 		return "", err
 	}
+	if userDb == nil {
+		err = s.register(ctx, authInfo)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		if !s.hasher.VerifyPassword(authInfo.Password, userDb.Password) {
+			s.logger.Warnf("login user: invalid password")
+			return "", fmt.Errorf("invalid password")
+		}
+	}
 
 	token, err := jwt.CreateToken(authInfo.Username, s.jwtKey)
 	if err != nil {
-		s.logger.Warnf("User %s trying to login: geerating auth token error (%v)", err)
+		s.logger.Warnf("User %s trying to login: generating auth token error (%v)", err)
 		return "", fmt.Errorf("generating token: %w", err)
 	}
 
 	return token, nil
+}
+
+func (s *AuthService) register(ctx context.Context, authInfo *entity.Auth) error {
+	hashedPass, err := s.hasher.HashPassword(authInfo.Password)
+	if err != nil {
+		s.logger.Warnf("User %s hashing pass: %v", authInfo.Username, err)
+		return err
+	}
+	authInfo.Password = hashedPass
+
+	err = s.authRepo.Register(ctx, authInfo)
+	if err != nil {
+		s.logger.Warnf("User %s trying to login: %v", authInfo.Username, err)
+		return err
+	}
+
+	return nil
 }
