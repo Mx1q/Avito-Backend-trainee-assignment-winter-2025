@@ -7,44 +7,54 @@ import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/storage/postgres"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/web"
 	"context"
+	"errors"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
+)
+
+const (
+	GracefulShutdownSeconds = 30
 )
 
 func main() {
+	log.Println("Reading config...")
 	cfg, err := config.ReadConfig()
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("reading config error: %v\n", err)
 	}
 
+	log.Println("Opening log file...")
 	logFile, err := os.OpenFile(cfg.Logger.File, os.O_APPEND|os.O_WRONLY|os.O_CREATE, os.ModeAppend)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("Opening log file error: %v\n", err)
 	}
 	defer func(logFile *os.File) {
 		err := logFile.Close()
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatalf("Closing log file error: %v\n", err)
 		}
 	}(logFile)
 	logger := loggerPackage.NewLogger(cfg.Logger.Level, logFile)
 
 	//tokenAuth := jwtauth.New("HS256", []byte(cfg.Jwt.Key), nil)
 
-	logger.Infof("connecting to database...")
+	log.Println("Connecting to database...")
 	pool, err := postgres.NewConn(context.Background(), &cfg.Database)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("Connecting to database error: %v\n", err)
 	}
-	logger.Infof("successfully connected to database!")
+	log.Println("Successfully connected to database!")
 
 	app := app.NewApp(pool, cfg, logger)
-	mux := chi.NewRouter()
-	mux.Use(cors.Handler(cors.Options{
+	r := chi.NewRouter()
+	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
@@ -53,11 +63,42 @@ func main() {
 		MaxAge:           300,
 	}))
 
-	mux.Use(middleware.Logger)
+	r.Use(middleware.Logger)
 
-	mux.Route("/api", func(r chi.Router) {
+	r.Route("/api", func(r chi.Router) {
 		r.Post("/auth", web.AuthHandler(app))
 	})
+	server := &http.Server{
+		Addr:    "localhost:8080",
+		Handler: r,
+	}
 
-	http.ListenAndServe(":8080", mux)
+	serverCtx, serverStopCtx := context.WithCancel(context.Background())
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func() {
+		<-sig
+
+		log.Println("shutting down server...")
+		shutdownCtx, _ := context.WithTimeout(serverCtx, GracefulShutdownSeconds*time.Second)
+		go func() {
+			<-shutdownCtx.Done()
+			if errors.Is(shutdownCtx.Err(), context.DeadlineExceeded) {
+				log.Fatal("graceful shutdown timed out.. forcing exit.")
+			}
+		}()
+
+		err := server.Shutdown(shutdownCtx)
+		if err != nil {
+			log.Fatal(err)
+		}
+		serverStopCtx()
+	}()
+
+	err = server.ListenAndServe()
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Fatal(err)
+	}
+
+	<-serverCtx.Done()
 }
