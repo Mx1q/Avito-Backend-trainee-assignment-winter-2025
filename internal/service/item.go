@@ -46,3 +46,19 @@ func (s *ItemService) BuyItem(ctx context.Context, itemName string, username str
 
 	return nil
 }
+
+func (s *ItemService) GetInventory(ctx context.Context, username string) ([]*entity.Item, error) {
+	s.logger.Infof("User \"%s\" getting his inventory", username)
+	if username == "" {
+		s.logger.Warnf("Getting inventory for empty username")
+		return nil, errs.InvalidData
+	}
+
+	items, err := s.itemRepo.GetInventory(ctx, username)
+	if err != nil {
+		s.logger.Warnf("User \"%s\" getting his inventory: %v", username, err)
+		return nil, errs.InternalError
+	}
+
+	return items, nil
+}

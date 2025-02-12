@@ -79,6 +79,7 @@ func main() {
 			})
 
 			r.Post("/sendCoin", web.SendCoinsHandler(app))
+			r.Get("/info", web.GetUserInfoHandler(app))
 		})
 	})
 	server := &http.Server{

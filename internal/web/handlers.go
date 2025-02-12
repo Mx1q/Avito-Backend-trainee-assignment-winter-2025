@@ -123,3 +123,30 @@ func SendCoinsHandler(app *app.App) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 	}
 }
+
+func GetUserInfoHandler(app *app.App) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const prompt = "Getting user info"
+
+		username, err := GetStringClaimFromJWT(r.Context(), "sub")
+		if err != nil {
+			errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusUnauthorized)
+		}
+
+		items, err := app.ItemService.GetInventory(r.Context(), username)
+		if err != nil {
+			if errors.Is(err, errs.InvalidData) {
+				errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusBadRequest)
+			} else {
+				errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusInternalServerError)
+			}
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(models.Info{
+			Inventory: models.ToInventoryTransport(items),
+		})
+	}
+}

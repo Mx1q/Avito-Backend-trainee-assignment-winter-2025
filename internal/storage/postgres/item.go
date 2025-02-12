@@ -21,7 +21,7 @@ func NewItemRepository(db *pgxpool.Pool) entity.IItemRepository {
 	}
 }
 
-func (r itemRepository) BuyItem(ctx context.Context, itemName string, username string) error {
+func (r *itemRepository) BuyItem(ctx context.Context, itemName string, username string) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("create transaction: %w", err)
@@ -122,4 +122,38 @@ func (r itemRepository) BuyItem(ctx context.Context, itemName string, username s
 			username, itemName, err)
 	}
 	return nil
+}
+
+func (r *itemRepository) GetInventory(ctx context.Context, username string) ([]*entity.Item, error) {
+	query, args, err := r.builder.Select("item", "count(*)").
+		From("purchases").
+		Where(squirrel.Eq{"username": username}).
+		GroupBy("item").
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("building getting user coins query: %w", err)
+	}
+
+	rows, err := r.db.Query(
+		ctx,
+		query,
+		args...,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("getting items owned by user: %w", err)
+	}
+	items := make([]*entity.Item, 0)
+	for rows.Next() {
+		tmp := new(entity.Item)
+		err = rows.Scan(
+			&tmp.Name,
+			&tmp.Quantity,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scanning item: %w", err)
+		}
+		items = append(items, tmp)
+	}
+
+	return items, nil
 }
