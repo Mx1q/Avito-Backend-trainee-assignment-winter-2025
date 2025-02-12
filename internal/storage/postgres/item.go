@@ -77,7 +77,8 @@ func (r itemRepository) BuyItem(ctx context.Context, itemName string, username s
 	}
 
 	if userCoins < itemPrice {
-		return errs.NotEnoughCoins
+		err = errs.NotEnoughCoins
+		return err
 	}
 
 	query, args, err = r.builder.Update("users").
