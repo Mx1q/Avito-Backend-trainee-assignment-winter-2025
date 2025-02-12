@@ -109,6 +109,23 @@ func (r *userRepository) SendCoins(ctx context.Context, fromUser string, toUser 
 		return fmt.Errorf("incrementing user \"%s\" coins: %w", toUser, err)
 	}
 
+	query, args, err = r.builder.Insert("transactions").
+		Columns("fromUser", "toUser", "coins").
+		Values(fromUser, toUser, amount).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("building saving transaction history query: %w", err)
+	}
+
+	_, err = tx.Exec(
+		ctx,
+		query,
+		args...,
+	)
+	if err != nil {
+		return fmt.Errorf("saving transaction history: %w", err)
+	}
+
 	err = tx.Commit(ctx)
 	if err != nil {
 		return fmt.Errorf("commiting transaction error: %w", err)
