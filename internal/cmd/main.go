@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/go-chi/jwtauth/v5"
 	"log"
 	"net/http"
 	"os"
@@ -44,7 +45,7 @@ func main() {
 	}(logFile)
 	logger := loggerPackage.NewLogger(cfg.Logger.Level, logFile)
 
-	//tokenAuth := jwtauth.New("HS256", []byte(cfg.Jwt.Key), nil)
+	tokenAuth := jwtauth.New("HS256", []byte(cfg.Jwt.Key), nil)
 
 	log.Println("Connecting to database...")
 	pool, err := postgres.NewConn(context.Background(), &cfg.Database)
@@ -68,6 +69,16 @@ func main() {
 
 	r.Route("/api", func(r chi.Router) {
 		r.Post("/auth", web.AuthHandler(app))
+
+		r.Group(func(r chi.Router) {
+			r.Use(jwtauth.Verifier(tokenAuth))
+			r.Use(jwtauth.Authenticator(tokenAuth))
+
+			//r.Post("/", v2.CreateSalad(app))
+			r.Route("/buy", func(r chi.Router) {
+				r.Get("/{item}", web.BuyItemHandler(app))
+			})
+		})
 	})
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.HTTP.Port),

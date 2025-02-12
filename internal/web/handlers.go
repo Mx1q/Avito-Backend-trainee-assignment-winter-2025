@@ -8,8 +8,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"net/http"
 	"time"
+)
+
+const (
+	TokenExpirationMinutes = 60 * 24
 )
 
 type ErrorResponse struct {
@@ -56,12 +61,34 @@ func AuthHandler(app *app.App) http.HandlerFunc {
 			Value:   token,
 			Path:    "/",
 			Secure:  true,
-			Expires: time.Now().Add(3600 * 24 * time.Second),
+			Expires: time.Now().Add(TokenExpirationMinutes * time.Minute),
 		}
 		http.SetCookie(w, &cookie)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(models.AuthResponse{Token: token})
+	}
+}
+
+func BuyItemHandler(app *app.App) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		prompt := "Buying item"
+
+		itemName := chi.URLParam(r, "item")
+		username, err := GetStringClaimFromJWT(r.Context(), "sub")
+		if err != nil {
+			errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusUnauthorized)
+		}
+
+		err = app.ItemService.BuyItem(r.Context(), itemName, username)
+		if err != nil {
+			errorResponse(w, fmt.Errorf("%s: %s", prompt,
+				http.StatusText(http.StatusInternalServerError)).Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 	}
 }

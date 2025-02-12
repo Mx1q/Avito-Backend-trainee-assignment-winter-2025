@@ -7,4 +7,5 @@ var (
 	InvalidData        = fmt.Errorf("invalid data")
 	InternalError      = fmt.Errorf("internal error")
 	InvalidCredentials = fmt.Errorf("invalid credentials")
+	NotEnoughCoins     = fmt.Errorf("not enough coins")
 )

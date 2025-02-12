@@ -14,10 +14,12 @@ type App struct {
 	Config      *config.Config
 	Logger      logger.ILogger
 	AuthService entity.IAuthService
+	ItemService entity.IItemService
 }
 
 func NewApp(db *pgxpool.Pool, cfg *config.Config, logger logger.ILogger) *App {
 	authRepo := postgres.NewAuthRepository(db)
+	itemRepo := postgres.NewItemRepository(db)
 
 	return &App{
 		Config: cfg,
@@ -27,6 +29,10 @@ func NewApp(db *pgxpool.Pool, cfg *config.Config, logger logger.ILogger) *App {
 			logger,
 			jwt.NewHashCrypto(),
 			cfg.Jwt.Key,
+		),
+		ItemService: service.NewItemService(
+			itemRepo,
+			logger,
 		),
 	}
 }
