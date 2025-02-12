@@ -8,6 +8,7 @@ import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/web"
 	"context"
 	"errors"
+	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -69,7 +70,7 @@ func main() {
 		r.Post("/auth", web.AuthHandler(app))
 	})
 	server := &http.Server{
-		Addr:    "localhost:8080",
+		Addr:    fmt.Sprintf(":%d", cfg.HTTP.Port),
 		Handler: r,
 	}
 

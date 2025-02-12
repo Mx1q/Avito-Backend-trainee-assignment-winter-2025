@@ -2,10 +2,11 @@ package web
 
 import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/app"
-	"Avito-Backend-trainee-assignment-winter-2025/internal/entity"
+	errs "Avito-Backend-trainee-assignment-winter-2025/internal/pkg/errors"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/pkg/jwt"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/web/models"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -31,10 +32,16 @@ func AuthHandler(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		ua := &entity.Auth{Username: req.Username, Password: req.Password}
+		ua := models.ToAuthEntity(&req)
 		token, err := app.AuthService.Auth(r.Context(), ua)
 		if err != nil {
-			errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusUnauthorized)
+			if errors.Is(err, errs.InvalidData) {
+				errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusBadRequest)
+			} else if errors.Is(err, errs.InvalidCredentials) {
+				errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusUnauthorized)
+			} else {
+				errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusInternalServerError)
+			}
 			return
 		}
 

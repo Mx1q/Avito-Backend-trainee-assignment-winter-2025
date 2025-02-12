@@ -2,6 +2,7 @@ package service
 
 import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/entity"
+	errs "Avito-Backend-trainee-assignment-winter-2025/internal/pkg/errors"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/pkg/jwt"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/pkg/logger"
 	"context"
@@ -24,7 +25,7 @@ func NewAuthService(repo entity.IAuthRepository, logger logger.ILogger, hasher j
 	}
 }
 
-func isValid(authInfo entity.Auth) error {
+func isValid(authInfo *entity.Auth) error { // FIXME: check if authInfo is nil
 	if authInfo.Username == "" {
 		return fmt.Errorf("empty username")
 	}
@@ -36,33 +37,36 @@ func isValid(authInfo entity.Auth) error {
 
 func (s *AuthService) Auth(ctx context.Context, authInfo *entity.Auth) (string, error) {
 	s.logger.Infof("User %s trying to login", authInfo.Username)
-	err := isValid(*authInfo)
+	err := isValid(authInfo)
 	if err != nil {
 		s.logger.Warnf("User %s sent invalid data: %v", authInfo.Username, err)
-		return "", err
+		return "", errs.InvalidData
 	}
 
 	userDb, err := s.authRepo.GetByUsername(ctx, authInfo.Username)
 	if err != nil {
 		s.logger.Warnf("User %s trying to login: %v", authInfo.Username, err)
-		return "", err
+		return "", errs.InternalError
 	}
 	if userDb == nil {
+		s.logger.Infof("User %s not exists, trying to register", authInfo.Username)
 		err = s.register(ctx, authInfo)
 		if err != nil {
+			s.logger.Warnf("User %s trying to register: %v", authInfo.Username, err)
 			return "", err
 		}
 	} else {
 		if !s.hasher.VerifyPassword(authInfo.Password, userDb.Password) {
-			s.logger.Warnf("login user: invalid password")
-			return "", fmt.Errorf("invalid password")
+			s.logger.Warnf("User %s trying to login with invalid pass", authInfo.Username)
+			return "", errs.InvalidCredentials
 		}
 	}
 
 	token, err := jwt.CreateToken(authInfo.Username, s.jwtKey)
 	if err != nil {
-		s.logger.Warnf("User %s trying to login: generating auth token error (%v)", err)
-		return "", fmt.Errorf("generating token: %w", err)
+		s.logger.Warnf("User %s trying to login: creating auth token error (%v)",
+			authInfo.Username, err)
+		return "", errs.InternalError
 	}
 
 	return token, nil
