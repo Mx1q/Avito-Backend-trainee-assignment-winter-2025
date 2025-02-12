@@ -48,7 +48,7 @@ func (r *userRepository) SendCoins(ctx context.Context, fromUser string, toUser 
 		return fmt.Errorf("building getting user coins query: %w", err)
 	}
 
-	usersCoins := make([]int32, 2) // количество монет каждого двух пользователей (order by username)
+	usersCoins := make([]int32, 2) // количество монет двух пользователей (order by username)
 	index := 0
 	rows, err := tx.Query(
 		ctx,
