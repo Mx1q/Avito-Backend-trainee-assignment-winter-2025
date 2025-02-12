@@ -15,11 +15,13 @@ type App struct {
 	Logger      logger.ILogger
 	AuthService entity.IAuthService
 	ItemService entity.IItemService
+	UserService entity.IUserService
 }
 
 func NewApp(db *pgxpool.Pool, cfg *config.Config, logger logger.ILogger) *App {
 	authRepo := postgres.NewAuthRepository(db)
 	itemRepo := postgres.NewItemRepository(db)
+	userRepo := postgres.NewUserRepository(db)
 
 	return &App{
 		Config: cfg,
@@ -32,6 +34,10 @@ func NewApp(db *pgxpool.Pool, cfg *config.Config, logger logger.ILogger) *App {
 		),
 		ItemService: service.NewItemService(
 			itemRepo,
+			logger,
+		),
+		UserService: service.NewUserService(
+			userRepo,
 			logger,
 		),
 	}

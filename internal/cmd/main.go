@@ -74,10 +74,11 @@ func main() {
 			r.Use(jwtauth.Verifier(tokenAuth))
 			r.Use(jwtauth.Authenticator(tokenAuth))
 
-			//r.Post("/", v2.CreateSalad(app))
 			r.Route("/buy", func(r chi.Router) {
 				r.Get("/{item}", web.BuyItemHandler(app))
 			})
+
+			r.Post("/sendCoin", web.SendCoinsHandler(app))
 		})
 	})
 	server := &http.Server{

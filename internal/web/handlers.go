@@ -29,7 +29,7 @@ func errorResponse(w http.ResponseWriter, err string, statusCode int) {
 
 func AuthHandler(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		const prompt = "authorization"
+		const prompt = "Authorization"
 		var req models.Auth
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
@@ -73,7 +73,7 @@ func AuthHandler(app *app.App) http.HandlerFunc {
 
 func BuyItemHandler(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		prompt := "Buying item"
+		const prompt = "Buying item"
 
 		itemName := chi.URLParam(r, "item")
 		username, err := GetStringClaimFromJWT(r.Context(), "sub")
@@ -85,6 +85,37 @@ func BuyItemHandler(app *app.App) http.HandlerFunc {
 		if err != nil {
 			errorResponse(w, fmt.Errorf("%s: %s", prompt,
 				http.StatusText(http.StatusInternalServerError)).Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func SendCoinsHandler(app *app.App) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const prompt = "Sending coins"
+
+		fromUser, err := GetStringClaimFromJWT(r.Context(), "sub")
+		if err != nil {
+			errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusUnauthorized)
+		}
+
+		var req models.CoinsTransfer
+		err = json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			errorResponse(w, fmt.Errorf("%s: %s", prompt, "invalid data").Error(), http.StatusBadRequest)
+			return
+		}
+
+		err = app.UserService.SendCoins(r.Context(), fromUser, req.ToUser, req.Amount)
+		if err != nil {
+			if errors.Is(err, errs.InvalidData) {
+				errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusBadRequest)
+			} else {
+				errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusInternalServerError)
+			}
 			return
 		}
 
