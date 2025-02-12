@@ -4,15 +4,20 @@ import "context"
 
 type User struct {
 	Username string
-	coins    int32
+	Coins    int32
+}
+
+type CoinsHistory struct {
+	Received []*User
+	Sent     []*User
 }
 
 type IUserRepository interface {
 	SendCoins(ctx context.Context, fromUser string, toUser string, amount int32) error
-	//GetCoinsHistory(username string) ([]User, []User, error) // received, sent
+	GetCoinsHistory(ctx context.Context, username string) (int32, *CoinsHistory, error)
 }
 
 type IUserService interface {
 	SendCoins(ctx context.Context, fromUser string, toUser string, amount int32) error
-	//GetCoinsHistory(username string) ([]User, []User, error) // received, sent
+	GetCoinsHistory(ctx context.Context, username string) (int32, *CoinsHistory, error)
 }

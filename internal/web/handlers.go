@@ -143,10 +143,21 @@ func GetUserInfoHandler(app *app.App) http.HandlerFunc {
 			return
 		}
 
+		coins, coinHistory, err := app.UserService.GetCoinsHistory(r.Context(), username)
+		if err != nil {
+			if errors.Is(err, errs.InvalidData) {
+				errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusBadRequest)
+			} else {
+				errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusInternalServerError)
+			}
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(models.Info{
-			Inventory: models.ToInventoryTransport(items),
+			Coins:       coins,
+			Inventory:   models.ToInventoryTransport(items),
+			CoinHistory: models.ToCoinsHistoryTransport(coinHistory),
 		})
 	}
 }

@@ -132,3 +132,109 @@ func (r *userRepository) SendCoins(ctx context.Context, fromUser string, toUser 
 	}
 	return nil
 }
+
+func (r *userRepository) GetCoinsHistory(ctx context.Context, username string) (int32, *entity.CoinsHistory, error) {
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return 0, nil, fmt.Errorf("create transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			rollbackErr := tx.Rollback(ctx)
+			if rollbackErr != nil {
+				err = fmt.Errorf("%v: %w", rollbackErr, err)
+			}
+		}
+	}()
+
+	query, args, err := r.builder.Select("fromUser", "coins").
+		From("transactions").
+		Where(squirrel.Eq{"toUser": username}).
+		OrderBy("time").
+		ToSql()
+	if err != nil {
+		return 0, nil, fmt.Errorf("building getting received transactions query: %w", err)
+	}
+
+	rows, err := tx.Query(
+		ctx,
+		query,
+		args...,
+	)
+	if err != nil {
+		return 0, nil, fmt.Errorf("getting received transactions: %w", err)
+	}
+	defer rows.Close()
+
+	coinsHistory := new(entity.CoinsHistory)
+	coinsHistory.Received = make([]*entity.User, 0)
+	for rows.Next() {
+		tmp := new(entity.User)
+		err = rows.Scan(
+			&tmp.Username,
+			&tmp.Coins,
+		)
+		if err != nil {
+			return 0, nil, fmt.Errorf("scanning transaction from user: %w", err)
+		}
+		coinsHistory.Received = append(coinsHistory.Received, tmp)
+	}
+
+	query, args, err = r.builder.Select("toUser", "coins").
+		From("transactions").
+		Where(squirrel.Eq{"fromUser": username}).
+		OrderBy("time").
+		ToSql()
+	if err != nil {
+		return 0, nil, fmt.Errorf("building getting sent transactions query: %w", err)
+	}
+
+	rows, err = tx.Query(
+		ctx,
+		query,
+		args...,
+	)
+	if err != nil {
+		return 0, nil, fmt.Errorf("getting sent transactions: %w", err)
+	}
+	defer rows.Close()
+
+	coinsHistory.Sent = make([]*entity.User, 0)
+	for rows.Next() {
+		tmp := new(entity.User)
+		err = rows.Scan(
+			&tmp.Username,
+			&tmp.Coins,
+		)
+		if err != nil {
+			return 0, nil, fmt.Errorf("scanning transaction from user: %w", err)
+		}
+		coinsHistory.Sent = append(coinsHistory.Sent, tmp)
+	}
+
+	query, args, err = r.builder.Select("coins").
+		From("users").
+		Where(squirrel.Eq{"username": username}).
+		ToSql()
+	if err != nil {
+		return 0, nil, fmt.Errorf("building getting sent transactions query: %w", err)
+	}
+
+	var coins int32
+	err = tx.QueryRow(
+		ctx,
+		query,
+		args...,
+	).Scan(
+		&coins,
+	)
+	if err != nil {
+		return 0, nil, fmt.Errorf("getting user coins: %w", err)
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return 0, nil, fmt.Errorf("commiting transaction: %w", err)
+	}
+	return coins, coinsHistory, nil
+}

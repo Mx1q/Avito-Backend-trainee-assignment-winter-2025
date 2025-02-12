@@ -61,3 +61,19 @@ func (s *UserService) SendCoins(ctx context.Context, fromUser string, toUser str
 
 	return nil
 }
+
+func (s *UserService) GetCoinsHistory(ctx context.Context, username string) (int32, *entity.CoinsHistory, error) {
+	if username == "" {
+		s.logger.Warnf("Getting coins history for empty username")
+		return 0, nil, errs.InvalidData
+	}
+	s.logger.Infof("Getting coins history for user \"%s\"", username)
+
+	coins, coinsHistory, err := s.userRepo.GetCoinsHistory(ctx, username)
+	if err != nil {
+		s.logger.Warnf("Getting coins history for user \"%s\": %v", username, err)
+		return 0, nil, errs.InternalError
+	}
+
+	return coins, coinsHistory, nil
+}
