@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/rs/zerolog/log"
 )
 
 type itemRepository struct {
@@ -44,7 +43,6 @@ func (r itemRepository) BuyItem(ctx context.Context, itemName string, username s
 	if err != nil {
 		return fmt.Errorf("building getting user coins query: %w", err)
 	}
-	log.Printf("%s\n", query) // FIXME: delete me
 
 	var userCoins int32
 	err = tx.QueryRow(
