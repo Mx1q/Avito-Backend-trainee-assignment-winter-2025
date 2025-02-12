@@ -2,15 +2,8 @@ package entity
 
 import "context"
 
-type Pass struct {
-	Password string
-	//IsHashed bool
-	HashedPassword string
-}
-
 type Auth struct {
 	Username string
-	//Password string
 	Password string
 }
 
