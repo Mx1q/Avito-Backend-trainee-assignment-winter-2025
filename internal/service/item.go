@@ -5,6 +5,7 @@ import (
 	errs "Avito-Backend-trainee-assignment-winter-2025/internal/pkg/errors"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/pkg/logger"
 	"context"
+	"errors"
 	"fmt"
 )
 
@@ -20,27 +21,34 @@ func NewItemService(repo entity.IItemRepository, logger logger.ILogger) entity.I
 	}
 }
 
-func (s *ItemService) isValid(itemName string, username string) error {
-	if itemName == "" {
+func (s *ItemService) isValid(purchase *entity.Purchase) error {
+	if purchase == nil {
+		return fmt.Errorf("pointer to struct is nil")
+	}
+	if purchase.ItemName == "" {
 		return fmt.Errorf("empty item name")
 	}
-	if username == "" {
+	if purchase.Username == "" {
 		return fmt.Errorf("empty username")
 	}
 	return nil
 }
 
-func (s *ItemService) BuyItem(ctx context.Context, itemName string, username string) error {
-	s.logger.Infof("User %s trying to buy item %s", username, itemName)
-	err := s.isValid(itemName, username)
+func (s *ItemService) BuyItem(ctx context.Context, purchase *entity.Purchase) error {
+	err := s.isValid(purchase)
 	if err != nil {
-		s.logger.Warnf("User %s trying to buy item %s: %v", username, itemName, err)
+		s.logger.Warnf("buying item invalid data: %v", err)
 		return errs.InvalidData
 	}
+	s.logger.Infof("User %s trying to buy item %s", purchase.Username, purchase.ItemName)
 
-	err = s.itemRepo.BuyItem(ctx, itemName, username)
+	err = s.itemRepo.BuyItem(ctx, purchase)
 	if err != nil {
-		s.logger.Warnf("User %s trying to buy item %s: %v", username, itemName, err)
+		s.logger.Warnf("User %s trying to buy item %s: %v", purchase.Username, purchase.ItemName, err)
+		if errors.Is(err, errs.ItemNotFound) ||
+			errors.Is(err, errs.UserNotFound) || errors.Is(err, errs.NotEnoughCoins) {
+			return err
+		}
 		return errs.InternalError
 	}
 

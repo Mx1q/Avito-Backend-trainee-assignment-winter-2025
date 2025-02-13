@@ -21,7 +21,7 @@ func NewItemRepository(db *pgxpool.Pool) entity.IItemRepository {
 	}
 }
 
-func (r *itemRepository) BuyItem(ctx context.Context, itemName string, username string) error {
+func (r *itemRepository) BuyItem(ctx context.Context, purchase *entity.Purchase) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("create transaction: %w", err)
@@ -37,7 +37,7 @@ func (r *itemRepository) BuyItem(ctx context.Context, itemName string, username 
 
 	query, args, err := r.builder.Select("coins").
 		From("users").
-		Where(squirrel.Eq{"username": username}).
+		Where(squirrel.Eq{"username": purchase.Username}).
 		Suffix("for update").
 		ToSql()
 	if err != nil {
@@ -53,12 +53,12 @@ func (r *itemRepository) BuyItem(ctx context.Context, itemName string, username 
 		&userCoins,
 	)
 	if err != nil {
-		return fmt.Errorf("getting user \"%s\" coins: %w", username, err)
+		return errs.UserNotFound
 	}
 
 	query, args, err = r.builder.Select("price").
 		From("items").
-		Where(squirrel.Eq{"name": itemName}).
+		Where(squirrel.Eq{"name": purchase.ItemName}).
 		ToSql()
 	if err != nil {
 		return fmt.Errorf("building getting item price query: %w", err)
@@ -73,7 +73,7 @@ func (r *itemRepository) BuyItem(ctx context.Context, itemName string, username 
 		&itemPrice,
 	)
 	if err != nil {
-		return fmt.Errorf("getting item \"%s\" price: %w", itemName, err)
+		return errs.ItemNotFound
 	}
 
 	if userCoins < itemPrice {
@@ -83,7 +83,7 @@ func (r *itemRepository) BuyItem(ctx context.Context, itemName string, username 
 
 	query, args, err = r.builder.Update("users").
 		Set("coins", userCoins-itemPrice).
-		Where(squirrel.Eq{"username": username}).
+		Where(squirrel.Eq{"username": purchase.Username}).
 		ToSql()
 	if err != nil {
 		return fmt.Errorf("building updating user coins query: %w", err)
@@ -95,12 +95,12 @@ func (r *itemRepository) BuyItem(ctx context.Context, itemName string, username 
 		args...,
 	)
 	if err != nil {
-		return fmt.Errorf("updating user \"%s\" coins: %w", username, err)
+		return fmt.Errorf("updating user \"%s\" coins: %w", purchase.Username, err)
 	}
 
 	query, args, err = r.builder.Insert("purchases").
 		Columns("username", "item").
-		Values(username, itemName).
+		Values(purchase.Username, purchase.ItemName).
 		ToSql()
 	if err != nil {
 		return fmt.Errorf("building creating purchase query: %w", err)
@@ -113,13 +113,13 @@ func (r *itemRepository) BuyItem(ctx context.Context, itemName string, username 
 	)
 	if err != nil {
 		return fmt.Errorf("creating user \"%s\" item \"%s\" purchase: %w",
-			username, itemName, err)
+			purchase.Username, purchase.ItemName, err)
 	}
 
 	err = tx.Commit(ctx)
 	if err != nil {
 		return fmt.Errorf("user \"%s\" buing item \"%s\" (commiting transaction error): %w",
-			username, itemName, err)
+			purchase.Username, purchase.ItemName, err)
 	}
 	return nil
 }

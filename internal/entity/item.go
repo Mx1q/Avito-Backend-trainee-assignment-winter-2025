@@ -8,12 +8,17 @@ type Item struct {
 	Quantity int32
 }
 
+type Purchase struct {
+	Username string
+	ItemName string
+}
+
 type IItemRepository interface {
 	GetInventory(ctx context.Context, username string) ([]*Item, error)
-	BuyItem(ctx context.Context, itemName string, username string) error
+	BuyItem(ctx context.Context, purchase *Purchase) error
 }
 
 type IItemService interface {
 	GetInventory(ctx context.Context, username string) ([]*Item, error)
-	BuyItem(ctx context.Context, itemName string, username string) error
+	BuyItem(ctx context.Context, purchase *Purchase) error
 }
