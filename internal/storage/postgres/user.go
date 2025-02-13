@@ -21,7 +21,7 @@ func NewUserRepository(db *pgxpool.Pool) entity.IUserRepository {
 	}
 }
 
-func (r *userRepository) SendCoins(ctx context.Context, fromUser string, toUser string, amount int32) error {
+func (r *userRepository) SendCoins(ctx context.Context, transfer *entity.TransferCoins) error {
 	tx, err := r.db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("create transaction: %w", err)
@@ -38,8 +38,8 @@ func (r *userRepository) SendCoins(ctx context.Context, fromUser string, toUser 
 	query, args, err := r.builder.Select("coins").
 		From("users").
 		Where(squirrel.Or{
-			squirrel.Eq{"username": fromUser},
-			squirrel.Eq{"username": toUser},
+			squirrel.Eq{"username": transfer.FromUser},
+			squirrel.Eq{"username": transfer.ToUser},
 		}).
 		OrderBy("username").
 		Suffix("for update").
@@ -69,15 +69,15 @@ func (r *userRepository) SendCoins(ctx context.Context, fromUser string, toUser 
 		return err
 	}
 
-	if fromUser > toUser && usersCoins[1] < amount ||
-		fromUser < toUser && usersCoins[0] < amount {
+	if transfer.FromUser > transfer.ToUser && usersCoins[1] < transfer.Amount ||
+		transfer.FromUser < transfer.ToUser && usersCoins[0] < transfer.Amount {
 		err = errs.NotEnoughCoins
 		return err
 	}
 
 	query, args, err = r.builder.Update("users").
-		Set("coins", squirrel.Expr("coins - ?", amount)).
-		Where(squirrel.Eq{"username": fromUser}).
+		Set("coins", squirrel.Expr("coins - ?", transfer.Amount)).
+		Where(squirrel.Eq{"username": transfer.FromUser}).
 		ToSql()
 	if err != nil {
 		return fmt.Errorf("building getting user coins query: %w", err)
@@ -89,12 +89,12 @@ func (r *userRepository) SendCoins(ctx context.Context, fromUser string, toUser 
 		args...,
 	)
 	if err != nil {
-		return fmt.Errorf("decrementing user \"%s\" coins: %w", fromUser, err)
+		return fmt.Errorf("decrementing user \"%s\" coins: %w", transfer.FromUser, err)
 	}
 
 	query, args, err = r.builder.Update("users").
-		Set("coins", squirrel.Expr("coins + ?", amount)).
-		Where(squirrel.Eq{"username": toUser}).
+		Set("coins", squirrel.Expr("coins + ?", transfer.Amount)).
+		Where(squirrel.Eq{"username": transfer.ToUser}).
 		ToSql()
 	if err != nil {
 		return fmt.Errorf("building getting user coins query: %w", err)
@@ -106,12 +106,12 @@ func (r *userRepository) SendCoins(ctx context.Context, fromUser string, toUser 
 		args...,
 	)
 	if err != nil {
-		return fmt.Errorf("incrementing user \"%s\" coins: %w", toUser, err)
+		return fmt.Errorf("incrementing user \"%s\" coins: %w", transfer.ToUser, err)
 	}
 
 	query, args, err = r.builder.Insert("transactions").
 		Columns("fromUser", "toUser", "coins").
-		Values(fromUser, toUser, amount).
+		Values(transfer.FromUser, transfer.ToUser, transfer.Amount).
 		ToSql()
 	if err != nil {
 		return fmt.Errorf("building saving transaction history query: %w", err)

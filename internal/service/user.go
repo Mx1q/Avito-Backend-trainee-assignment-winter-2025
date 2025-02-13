@@ -21,37 +21,39 @@ func NewUserService(repo entity.IUserRepository, logger logger.ILogger) entity.I
 	}
 }
 
-func (s *UserService) isValid(fromUser string, toUser string, amount int32) error {
-	if fromUser == "" {
+func (s *UserService) isValid(transfer *entity.TransferCoins) error {
+	if transfer == nil {
+		return fmt.Errorf("pointer to struct is nil")
+	}
+	if transfer.FromUser == "" {
 		return fmt.Errorf("empty fromUser")
 	}
-	if toUser == "" {
+	if transfer.ToUser == "" {
 		return fmt.Errorf("empty toUser")
 	}
-	if amount <= 0 {
+	if transfer.Amount <= 0 {
 		return fmt.Errorf("negative or zero amount of coins")
 	}
-	if fromUser == toUser {
+	if transfer.FromUser == transfer.ToUser {
 		return fmt.Errorf("same user as reciever and sender")
 	}
 
 	return nil
 }
 
-func (s *UserService) SendCoins(ctx context.Context, fromUser string, toUser string, amount int32) error {
-	err := s.isValid(fromUser, toUser, amount)
+func (s *UserService) SendCoins(ctx context.Context, transfer *entity.TransferCoins) error {
+	err := s.isValid(transfer)
 	if err != nil {
-		s.logger.Warnf("User \"%s\" trying to transfer coins (%d) to \"%s\": %v",
-			fromUser, amount, toUser, err)
+		s.logger.Warnf("Sending coins invalid data: %v", err)
 		return errs.InvalidData
 	}
 	s.logger.Infof("User \"%s\" trying to transfer coins (%d) to \"%s\"",
-		fromUser, amount, toUser)
+		transfer.FromUser, transfer.Amount, transfer.ToUser)
 
-	err = s.userRepo.SendCoins(ctx, fromUser, toUser, amount)
+	err = s.userRepo.SendCoins(ctx, transfer)
 	if err != nil {
 		s.logger.Warnf("User \"%s\" trying to transfer coins (%d) to \"%s\": %v",
-			fromUser, amount, toUser, err)
+			transfer.FromUser, transfer.Amount, transfer.ToUser, err)
 
 		if errors.Is(err, errs.UserNotFound) || errors.Is(err, errs.NotEnoughCoins) {
 			return err
