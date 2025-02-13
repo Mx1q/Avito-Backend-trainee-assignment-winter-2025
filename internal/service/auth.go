@@ -25,7 +25,10 @@ func NewAuthService(repo entity.IAuthRepository, logger logger.ILogger, hasher j
 	}
 }
 
-func isValid(authInfo *entity.Auth) error { // FIXME: check if authInfo is nil
+func isValid(authInfo *entity.Auth) error {
+	if authInfo == nil {
+		return fmt.Errorf("pointer to struct is nil")
+	}
 	if authInfo.Username == "" {
 		return fmt.Errorf("empty username")
 	}
@@ -36,12 +39,12 @@ func isValid(authInfo *entity.Auth) error { // FIXME: check if authInfo is nil
 }
 
 func (s *AuthService) Auth(ctx context.Context, authInfo *entity.Auth) (string, error) {
-	s.logger.Infof("User %s trying to login", authInfo.Username)
 	err := isValid(authInfo)
 	if err != nil {
-		s.logger.Warnf("User %s sent invalid data: %v", authInfo.Username, err)
+		s.logger.Warnf("User sent invalid data: %v", err)
 		return "", errs.InvalidData
 	}
+	s.logger.Infof("User %s trying to login", authInfo.Username)
 
 	userDb, err := s.authRepo.GetByUsername(ctx, authInfo.Username)
 	if err != nil {
@@ -53,7 +56,7 @@ func (s *AuthService) Auth(ctx context.Context, authInfo *entity.Auth) (string, 
 		err = s.register(ctx, authInfo)
 		if err != nil {
 			s.logger.Warnf("User %s trying to register: %v", authInfo.Username, err)
-			return "", err
+			return "", errs.InternalError
 		}
 	} else {
 		if !s.hasher.VerifyPassword(authInfo.Password, userDb.Password) {
