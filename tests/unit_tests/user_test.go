@@ -65,7 +65,7 @@ func TestUserService_GetCoinsHistory(t *testing.T) {
 			}, // repo get coins history error
 			wantErr:     true,
 			requiredErr: errs.InternalError,
-		}, // успешное получение истории
+		}, // repo get coins history error
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
