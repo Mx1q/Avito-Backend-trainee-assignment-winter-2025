@@ -131,7 +131,7 @@ func (r *itemRepository) GetInventory(ctx context.Context, username string) ([]*
 		GroupBy("item").
 		ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("building getting user coins query: %w", err)
+		return nil, fmt.Errorf("building getting user inventory query: %w", err)
 	}
 
 	rows, err := r.db.Query(
