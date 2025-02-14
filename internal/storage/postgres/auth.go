@@ -2,11 +2,13 @@ package postgres
 
 import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/entity"
+	errs "Avito-Backend-trainee-assignment-winter-2025/internal/pkg/errors"
 	"context"
 	"errors"
 	"fmt"
 	"github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -31,7 +33,9 @@ func (r authRepository) GetByUsername(ctx context.Context, username string) (*en
 		return nil, fmt.Errorf("building query: %w", err)
 	}
 
-	authDb := new(entity.Auth)
+	authDb := &entity.Auth{
+		Username: username,
+	}
 	err = r.db.QueryRow(
 		ctx,
 		query,
@@ -64,6 +68,10 @@ func (r authRepository) Register(ctx context.Context, authInfo *entity.Auth) err
 		args...,
 	)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == errs.UniqueConstraintSQLState {
+			return errs.UserAlreadyExists
+		}
 		return fmt.Errorf("creating user: %w", err)
 	}
 	return nil

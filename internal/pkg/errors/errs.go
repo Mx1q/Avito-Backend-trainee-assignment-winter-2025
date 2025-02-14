@@ -2,6 +2,10 @@ package errs
 
 import "fmt"
 
+const (
+	UniqueConstraintSQLState = "23505"
+)
+
 var (
 	ErrNotFound        = fmt.Errorf("not found")
 	InvalidData        = fmt.Errorf("invalid data")
@@ -10,4 +14,5 @@ var (
 	NotEnoughCoins     = fmt.Errorf("not enough coins")
 	UserNotFound       = fmt.Errorf("user not found")
 	ItemNotFound       = fmt.Errorf("item not found")
+	UserAlreadyExists  = fmt.Errorf("user already exists")
 )
