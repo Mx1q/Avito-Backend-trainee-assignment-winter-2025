@@ -109,7 +109,7 @@ func TestAuthService_Auth(t *testing.T) {
 			},
 			wantErr:     true,
 			requiredErr: errs.InvalidData,
-		}, // пустое пароль
+		}, // пустой пароль
 		{
 			name: "repo getByUsername internal error",
 			authInfo: &entity.Auth{
