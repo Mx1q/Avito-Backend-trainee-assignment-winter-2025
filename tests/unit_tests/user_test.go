@@ -62,10 +62,25 @@ func TestUserService_GetCoinsHistory(t *testing.T) {
 						nil,
 						fmt.Errorf("repo error"),
 					)
-			}, // repo get coins history error
+			},
 			wantErr:     true,
 			requiredErr: errs.InternalError,
 		}, // repo get coins history error
+		{
+			name:     "пользователь не найден",
+			username: "user",
+			beforeTest: func(authRepo mocks.MockIUserRepository) {
+				repo.EXPECT().
+					GetCoinsHistory(context.Background(), "user").
+					Return(
+						int32(0),
+						nil,
+						errs.UserNotFound,
+					)
+			},
+			wantErr:     true,
+			requiredErr: errs.UserNotFound,
+		}, // пользователь не найден
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

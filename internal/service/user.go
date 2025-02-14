@@ -74,6 +74,9 @@ func (s *UserService) GetCoinsHistory(ctx context.Context, username string) (int
 	coins, coinsHistory, err := s.userRepo.GetCoinsHistory(ctx, username)
 	if err != nil {
 		s.logger.Warnf("Getting coins history for user \"%s\": %v", username, err)
+		if errors.Is(err, errs.UserNotFound) {
+			return 0, nil, err
+		}
 		return 0, nil, errs.InternalError
 	}
 
