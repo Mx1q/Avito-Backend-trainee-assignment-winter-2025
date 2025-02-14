@@ -1,4 +1,4 @@
-package integration_tests
+package postgres_test_helper
 
 import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/pkg/config"
