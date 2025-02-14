@@ -5,7 +5,7 @@ import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/pkg/config"
 	loggerPackage "Avito-Backend-trainee-assignment-winter-2025/internal/pkg/logger"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/storage/postgres"
-	"Avito-Backend-trainee-assignment-winter-2025/internal/web"
+	"Avito-Backend-trainee-assignment-winter-2025/internal/web/handlers"
 	"context"
 	"errors"
 	"fmt"
@@ -68,18 +68,18 @@ func main() {
 	r.Use(middleware.Logger)
 
 	r.Route("/api", func(r chi.Router) {
-		r.Post("/auth", web.AuthHandler(app))
+		r.Post("/auth", handlers.AuthHandler(app))
 
 		r.Group(func(r chi.Router) {
 			r.Use(jwtauth.Verifier(tokenAuth))
 			r.Use(jwtauth.Authenticator(tokenAuth))
 
 			r.Route("/buy", func(r chi.Router) {
-				r.Get("/{item}", web.BuyItemHandler(app))
+				r.Get("/{item}", handlers.BuyItemHandler(app))
 			})
 
-			r.Post("/sendCoin", web.SendCoinsHandler(app))
-			r.Get("/info", web.GetUserInfoHandler(app))
+			r.Post("/sendCoin", handlers.SendCoinsHandler(app))
+			r.Get("/info", handlers.GetUserInfoHandler(app))
 		})
 	})
 	server := &http.Server{

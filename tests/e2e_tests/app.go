@@ -4,7 +4,7 @@ import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/app"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/mocks"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/pkg/config"
-	"Avito-Backend-trainee-assignment-winter-2025/internal/web"
+	"Avito-Backend-trainee-assignment-winter-2025/internal/web/handlers"
 	"context"
 	"errors"
 	"fmt"
@@ -48,18 +48,18 @@ func RunTheApp(db *pgxpool.Pool, started chan bool) {
 	r.Use(middleware.Logger)
 
 	r.Route("/api", func(r chi.Router) {
-		r.Post("/auth", web.AuthHandler(app))
+		r.Post("/auth", handlers.AuthHandler(app))
 
 		r.Group(func(r chi.Router) {
 			r.Use(jwtauth.Verifier(tokenAuth))
 			r.Use(jwtauth.Authenticator(tokenAuth))
 
 			r.Route("/buy", func(r chi.Router) {
-				r.Get("/{item}", web.BuyItemHandler(app))
+				r.Get("/{item}", handlers.BuyItemHandler(app))
 			})
 
-			r.Post("/sendCoin", web.SendCoinsHandler(app))
-			r.Get("/info", web.GetUserInfoHandler(app))
+			r.Post("/sendCoin", handlers.SendCoinsHandler(app))
+			r.Get("/info", handlers.GetUserInfoHandler(app))
 		})
 	})
 	server := &http.Server{

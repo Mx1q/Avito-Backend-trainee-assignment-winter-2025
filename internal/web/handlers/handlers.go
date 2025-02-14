@@ -1,9 +1,10 @@
-package web
+package handlers
 
 import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/app"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/entity"
 	errs "Avito-Backend-trainee-assignment-winter-2025/internal/pkg/errors"
+	"Avito-Backend-trainee-assignment-winter-2025/internal/web/jwt"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/web/models"
 	"encoding/json"
 	"errors"
@@ -70,7 +71,7 @@ func BuyItemHandler(app *app.App) http.HandlerFunc {
 		const prompt = "Buying item"
 
 		itemName := chi.URLParam(r, "item")
-		username, err := GetStringClaimFromJWT(r.Context(), "sub")
+		username, err := jwt.GetStringClaimFromJWT(r.Context(), "sub")
 		if err != nil {
 			errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusUnauthorized)
 		}
@@ -95,7 +96,7 @@ func SendCoinsHandler(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const prompt = "Sending coins"
 
-		fromUser, err := GetStringClaimFromJWT(r.Context(), "sub")
+		fromUser, err := jwt.GetStringClaimFromJWT(r.Context(), "sub")
 		if err != nil {
 			errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusUnauthorized)
 		}
@@ -131,7 +132,7 @@ func GetUserInfoHandler(app *app.App) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const prompt = "Getting user info"
 
-		username, err := GetStringClaimFromJWT(r.Context(), "sub")
+		username, err := jwt.GetStringClaimFromJWT(r.Context(), "sub")
 		if err != nil {
 			errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusUnauthorized)
 		}
