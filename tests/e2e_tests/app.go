@@ -89,13 +89,11 @@ func RunTheApp(db *pgxpool.Pool, started chan bool) {
 		serverStopCtx()
 	}()
 
-	go func() {
-		err := server.ListenAndServe()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatal(err)
-		}
-	}()
-
 	started <- true
+	err := server.ListenAndServe()
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Fatal(err)
+	}
+
 	<-serverCtx.Done()
 }
