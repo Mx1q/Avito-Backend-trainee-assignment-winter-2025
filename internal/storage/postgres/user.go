@@ -4,8 +4,10 @@ import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/entity"
 	errs "Avito-Backend-trainee-assignment-winter-2025/internal/pkg/errors"
 	"context"
+	"errors"
 	"fmt"
 	"github.com/Masterminds/squirrel"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -80,7 +82,7 @@ func (r *userRepository) SendCoins(ctx context.Context, transfer *entity.Transfe
 		Where(squirrel.Eq{"username": transfer.FromUser}).
 		ToSql()
 	if err != nil {
-		return fmt.Errorf("building getting user coins query: %w", err)
+		return fmt.Errorf("building decrementing user \"%s\" coins query: %w", transfer.FromUser, err)
 	}
 
 	_, err = tx.Exec(
@@ -97,7 +99,7 @@ func (r *userRepository) SendCoins(ctx context.Context, transfer *entity.Transfe
 		Where(squirrel.Eq{"username": transfer.ToUser}).
 		ToSql()
 	if err != nil {
-		return fmt.Errorf("building getting user coins query: %w", err)
+		return fmt.Errorf("building incrementing user \"%s\" coins query: %w", transfer.ToUser, err)
 	}
 
 	_, err = tx.Exec(
@@ -147,10 +149,33 @@ func (r *userRepository) GetCoinsHistory(ctx context.Context, username string) (
 		}
 	}()
 
-	query, args, err := r.builder.Select("fromUser", "coins").
+	query, args, err := r.builder.Select("coins").
+		From("users").
+		Where(squirrel.Eq{"username": username}).
+		ToSql()
+	if err != nil {
+		return 0, nil, fmt.Errorf("building getting sent transactions query: %w", err)
+	}
+
+	var coins int32
+	err = tx.QueryRow(
+		ctx,
+		query,
+		args...,
+	).Scan(
+		&coins,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, nil, errs.UserNotFound
+		}
+		return 0, nil, fmt.Errorf("getting user coins: %w", err)
+	}
+
+	query, args, err = r.builder.Select("fromUser", "coins").
 		From("transactions").
 		Where(squirrel.Eq{"toUser": username}).
-		OrderBy("time").
+		OrderBy("time desc").
 		ToSql()
 	if err != nil {
 		return 0, nil, fmt.Errorf("building getting received transactions query: %w", err)
@@ -183,7 +208,7 @@ func (r *userRepository) GetCoinsHistory(ctx context.Context, username string) (
 	query, args, err = r.builder.Select("toUser", "coins").
 		From("transactions").
 		Where(squirrel.Eq{"fromUser": username}).
-		OrderBy("time").
+		OrderBy("time desc").
 		ToSql()
 	if err != nil {
 		return 0, nil, fmt.Errorf("building getting sent transactions query: %w", err)
@@ -210,26 +235,6 @@ func (r *userRepository) GetCoinsHistory(ctx context.Context, username string) (
 			return 0, nil, fmt.Errorf("scanning transaction from user: %w", err)
 		}
 		coinsHistory.Sent = append(coinsHistory.Sent, tmp)
-	}
-
-	query, args, err = r.builder.Select("coins").
-		From("users").
-		Where(squirrel.Eq{"username": username}).
-		ToSql()
-	if err != nil {
-		return 0, nil, fmt.Errorf("building getting sent transactions query: %w", err)
-	}
-
-	var coins int32
-	err = tx.QueryRow(
-		ctx,
-		query,
-		args...,
-	).Scan(
-		&coins,
-	)
-	if err != nil {
-		return 0, nil, fmt.Errorf("getting user coins: %w", err)
 	}
 
 	err = tx.Commit(ctx)
