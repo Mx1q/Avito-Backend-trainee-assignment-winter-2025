@@ -4,7 +4,6 @@ import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/entity"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/mocks"
 	errs "Avito-Backend-trainee-assignment-winter-2025/internal/pkg/errors"
-	"Avito-Backend-trainee-assignment-winter-2025/internal/pkg/jwt"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/service"
 	"context"
 	"fmt"
@@ -20,7 +19,7 @@ func TestAuthService_Auth(t *testing.T) {
 	logger := mocks.NewMockLogger()
 	repo := mocks.NewMockIAuthRepository(ctrl)
 	hasher := mocks.NewMockIHashCrypto(ctrl)
-	tokenManager := jwt.NewTokenManager("abcdef12345")
+	tokenManager := mocks.NewMockITokenManager(ctrl)
 
 	svc := service.NewAuthService(repo, logger, hasher, tokenManager)
 
@@ -51,6 +50,10 @@ func TestAuthService_Auth(t *testing.T) {
 				hasher.EXPECT().
 					VerifyPassword("pass", "hashedPass").
 					Return(true)
+
+				tokenManager.EXPECT().
+					CreateToken("username").
+					Return("token", nil)
 			},
 			wantErr: false,
 		}, // успешная аутентификация
@@ -83,6 +86,10 @@ func TestAuthService_Auth(t *testing.T) {
 						},
 					).
 					Return(nil)
+
+				tokenManager.EXPECT().
+					CreateToken("new").
+					Return("token", nil)
 			},
 			wantErr: false,
 		}, // успешная регистрация
@@ -205,6 +212,34 @@ func TestAuthService_Auth(t *testing.T) {
 			wantErr:     true,
 			requiredErr: errs.InternalError,
 		}, // ошибка хеширования пароля
+		{
+			name: "ошибка получения токена",
+			authInfo: &entity.Auth{
+				Username: "username",
+				Password: "pass",
+			},
+			beforeTest: func(authRepo mocks.MockIAuthRepository, hasher mocks.MockIHashCrypto) {
+				authRepo.EXPECT().
+					GetByUsername(
+						context.Background(),
+						"username",
+					).
+					Return(&entity.Auth{
+						Username: "username",
+						Password: "hashedPass",
+					}, nil)
+
+				hasher.EXPECT().
+					VerifyPassword("pass", "hashedPass").
+					Return(true)
+
+				tokenManager.EXPECT().
+					CreateToken("username").
+					Return("", fmt.Errorf("creating token error"))
+			},
+			wantErr:     true,
+			requiredErr: errs.InternalError,
+		}, // успешная аутентификация
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -212,14 +247,12 @@ func TestAuthService_Auth(t *testing.T) {
 				tt.beforeTest(*repo, *hasher)
 			}
 
-			token, err := svc.Auth(context.Background(), tt.authInfo)
+			_, err := svc.Auth(context.Background(), tt.authInfo)
 
 			if tt.wantErr {
 				require.Equal(t, tt.requiredErr, err)
 			} else {
-				require.Nil(t, err)
-				_, errTokenParse := tokenManager.VerifyToken(token)
-				require.Nil(t, errTokenParse)
+				require.NoError(t, err)
 			}
 		})
 	}
