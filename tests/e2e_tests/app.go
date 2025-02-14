@@ -23,11 +23,12 @@ import (
 
 const (
 	GracefulShutdownSeconds = 30
+	TestingPort             = 8081
 )
 
 func RunTheApp(db *pgxpool.Pool, started chan bool) {
 	cfg := &config.Config{
-		HTTP: config.HTTPConfig{Port: 8081},
+		HTTP: config.HTTPConfig{Port: TestingPort},
 		Jwt:  config.Jwt{Key: "abcdef12345"},
 	}
 	logger := mocks.NewMockLogger()

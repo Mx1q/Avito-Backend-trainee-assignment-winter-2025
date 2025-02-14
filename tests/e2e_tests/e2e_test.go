@@ -3,6 +3,7 @@ package e2e_tests
 import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/web/models"
 	"context"
+	"fmt"
 	"github.com/Masterminds/squirrel"
 	"github.com/gavv/httpexpect/v2"
 	"github.com/stretchr/testify/require"
@@ -20,7 +21,7 @@ type E2ESuite struct {
 func (s *E2ESuite) SetupSuite() {
 	s.e = *httpexpect.WithConfig(httpexpect.Config{
 		Client:   &http.Client{},
-		BaseURL:  "http://localhost:8081",
+		BaseURL:  fmt.Sprintf("http://localhost:%d", TestingPort),
 		Reporter: httpexpect.NewAssertReporter(s.T()),
 		Printers: []httpexpect.Printer{
 			httpexpect.NewDebugPrinter(s.T(), true),
