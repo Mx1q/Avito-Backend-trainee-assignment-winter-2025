@@ -176,7 +176,7 @@ func TestUserService_SendCoins(t *testing.T) {
 			requiredErr: errs.NotEnoughCoins,
 		}, // у пользователя недостаточно монет
 		{
-			name: "пользователь-получатель не найден",
+			name: "пользователь не найден",
 			transfer: &entity.TransferCoins{
 				FromUser: "1",
 				ToUser:   "2",
@@ -193,7 +193,7 @@ func TestUserService_SendCoins(t *testing.T) {
 			},
 			wantErr:     true,
 			requiredErr: errs.UserNotFound,
-		}, // у пользователя недостаточно монет
+		}, // пользователь не найден
 		{
 			name: "пустое имя отправителя",
 			transfer: &entity.TransferCoins{
