@@ -10,18 +10,18 @@ import (
 )
 
 type AuthService struct {
-	logger   logger.ILogger
-	authRepo entity.IAuthRepository
-	hasher   jwt.IHashCrypto
-	jwtKey   string
+	logger       logger.ILogger
+	authRepo     entity.IAuthRepository
+	hasher       jwt.IHashCrypto
+	tokenManager jwt.ITokenManager
 }
 
-func NewAuthService(repo entity.IAuthRepository, logger logger.ILogger, hasher jwt.IHashCrypto, jwtKey string) entity.IAuthService {
+func NewAuthService(repo entity.IAuthRepository, logger logger.ILogger, hasher jwt.IHashCrypto, tokenManager jwt.ITokenManager) entity.IAuthService {
 	return &AuthService{
-		logger:   logger,
-		authRepo: repo,
-		hasher:   hasher,
-		jwtKey:   jwtKey,
+		logger:       logger,
+		authRepo:     repo,
+		hasher:       hasher,
+		tokenManager: tokenManager,
 	}
 }
 
@@ -65,7 +65,7 @@ func (s *AuthService) Auth(ctx context.Context, authInfo *entity.Auth) (string, 
 		}
 	}
 
-	token, err := jwt.CreateToken(authInfo.Username, s.jwtKey)
+	token, err := s.tokenManager.CreateToken(authInfo.Username)
 	if err != nil {
 		s.logger.Warnf("User %s trying to login: creating auth token error (%v)",
 			authInfo.Username, err)

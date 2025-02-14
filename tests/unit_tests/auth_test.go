@@ -20,9 +20,9 @@ func TestAuthService_Auth(t *testing.T) {
 	logger := mocks.NewMockLogger()
 	repo := mocks.NewMockIAuthRepository(ctrl)
 	hasher := mocks.NewMockIHashCrypto(ctrl)
-	jwtKey := "abcdef12345"
+	tokenManager := jwt.NewTokenManager("abcdef12345")
 
-	svc := service.NewAuthService(repo, logger, hasher, jwtKey)
+	svc := service.NewAuthService(repo, logger, hasher, tokenManager)
 
 	tests := []struct {
 		name        string
@@ -218,7 +218,7 @@ func TestAuthService_Auth(t *testing.T) {
 				require.Equal(t, tt.requiredErr, err)
 			} else {
 				require.Nil(t, err)
-				_, errTokenParse := jwt.VerifyToken(token, jwtKey)
+				_, errTokenParse := tokenManager.VerifyToken(token)
 				require.Nil(t, errTokenParse)
 			}
 		})

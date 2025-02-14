@@ -2,8 +2,8 @@ package web
 
 import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/app"
+	"Avito-Backend-trainee-assignment-winter-2025/internal/entity"
 	errs "Avito-Backend-trainee-assignment-winter-2025/internal/pkg/errors"
-	"Avito-Backend-trainee-assignment-winter-2025/internal/pkg/jwt"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/web/models"
 	"encoding/json"
 	"errors"
@@ -50,12 +50,6 @@ func AuthHandler(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		_, err = jwt.VerifyToken(token, app.Config.Jwt.Key)
-		if err != nil {
-			errorResponse(w, "Invalid token", http.StatusUnauthorized)
-			return
-		}
-
 		cookie := http.Cookie{
 			Name:    "access_token",
 			Value:   token,
@@ -81,7 +75,11 @@ func BuyItemHandler(app *app.App) http.HandlerFunc {
 			errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusUnauthorized)
 		}
 
-		err = app.ItemService.BuyItem(r.Context(), itemName, username)
+		purchase := entity.Purchase{
+			Username: username,
+			ItemName: itemName,
+		}
+		err = app.ItemService.BuyItem(r.Context(), &purchase)
 		if err != nil {
 			errorResponse(w, fmt.Errorf("%s: %s", prompt,
 				http.StatusText(http.StatusInternalServerError)).Error(), http.StatusInternalServerError)
@@ -109,7 +107,12 @@ func SendCoinsHandler(app *app.App) http.HandlerFunc {
 			return
 		}
 
-		err = app.UserService.SendCoins(r.Context(), fromUser, req.ToUser, req.Amount)
+		transfer := &entity.TransferCoins{
+			FromUser: fromUser,
+			ToUser:   req.ToUser,
+			Amount:   req.Amount,
+		}
+		err = app.UserService.SendCoins(r.Context(), transfer)
 		if err != nil {
 			if errors.Is(err, errs.InvalidData) {
 				errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusBadRequest)

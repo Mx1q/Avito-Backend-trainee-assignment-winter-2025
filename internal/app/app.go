@@ -30,7 +30,7 @@ func NewApp(db *pgxpool.Pool, cfg *config.Config, logger logger.ILogger) *App {
 			authRepo,
 			logger,
 			jwt.NewHashCrypto(),
-			cfg.Jwt.Key,
+			jwt.NewTokenManager(cfg.Jwt.Key),
 		),
 		ItemService: service.NewItemService(
 			itemRepo,
