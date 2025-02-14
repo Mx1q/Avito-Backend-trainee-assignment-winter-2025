@@ -149,7 +149,7 @@ func (s *IAuthSuite) TestAuthRepository_GetByUsername() {
 			wantErr: false,
 		}, // успешное получение
 		{
-			name: "успешное получение",
+			name: "пользователь не найден",
 			authInfo: &entity.Auth{
 				Username: "test",
 				Password: "hashedPass",
