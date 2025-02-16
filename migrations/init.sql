@@ -26,6 +26,8 @@ create table if not exists purchases (
     item varchar(32) references items(name)
 );
 
+alter system set max_connections=1000;
+
 -- default items data
 insert into items(name, price)
 values
