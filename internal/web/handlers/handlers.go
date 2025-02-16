@@ -130,8 +130,6 @@ func FGetUserInfoHandler(app *app.App) fiber.Handler {
 			return ctx.Status(fiber.StatusInternalServerError).JSON(errorMap(fmt.Sprintf("%s: %s", prompt, err.Error())))
 		}
 
-		log.Println(coins)
-
 		return ctx.Status(fiber.StatusOK).JSON(models.InfoResponse{
 			Coins:       coins,
 			Inventory:   models.ToInventoryTransport(items),
