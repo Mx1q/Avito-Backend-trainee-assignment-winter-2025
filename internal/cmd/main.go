@@ -59,13 +59,13 @@ func main() {
 	r.Use(cors.New())
 
 	r.Route("/api", func(r fiber.Router) {
-		r.Post("/auth", handlers.FAuthHandler(app))
+		r.Post("/auth", handlers.AuthHandler(app))
 
 		r.Use(middlewares.JwtMiddleware(cfg.Jwt.Key))
-		r.Get("/buy/:item", handlers.FBuyItemHandler(app))
+		r.Get("/buy/:item", handlers.BuyItemHandler(app))
 
-		r.Post("/sendCoin", handlers.FSendCoinsHandler(app))
-		r.Get("/info", handlers.FGetUserInfoHandler(app))
+		r.Post("/sendCoin", handlers.SendCoinsHandler(app))
+		r.Get("/info", handlers.GetUserInfoHandler(app))
 	})
 
 	go func() {

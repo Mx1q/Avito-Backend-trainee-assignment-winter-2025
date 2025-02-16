@@ -19,7 +19,7 @@ func errorMap(errText string) *fiber.Map {
 	}
 }
 
-func FAuthHandler(app *app.App) fiber.Handler {
+func AuthHandler(app *app.App) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		const prompt = "Authorization"
 		var req models.Auth
@@ -44,7 +44,7 @@ func FAuthHandler(app *app.App) fiber.Handler {
 	}
 }
 
-func FBuyItemHandler(app *app.App) fiber.Handler {
+func BuyItemHandler(app *app.App) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		const prompt = "Buying item"
 
@@ -71,7 +71,7 @@ func FBuyItemHandler(app *app.App) fiber.Handler {
 	}
 }
 
-func FSendCoinsHandler(app *app.App) fiber.Handler {
+func SendCoinsHandler(app *app.App) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		const prompt = "Sending coins"
 
@@ -106,7 +106,7 @@ func FSendCoinsHandler(app *app.App) fiber.Handler {
 	}
 }
 
-func FGetUserInfoHandler(app *app.App) fiber.Handler {
+func GetUserInfoHandler(app *app.App) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		const prompt = "Getting user info"
 
