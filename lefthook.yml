@@ -1,0 +1,10 @@
+pre-commit:
+  commands:
+    lint:
+      run: golangci-lint run --fix
+    unit_tests:
+      run: go test -v -cover -coverpkg "./internal/service" "./tests/unit_tests"
+    integration_tests:
+      run: go test -v -cover -coverpkg "./internal/storage/postgres" "./tests/integration_tests"
+    e2e_tests:
+      run: go test -v -cover -coverpkg "./internal/web/handlers" "./tests/e2e_tests"
