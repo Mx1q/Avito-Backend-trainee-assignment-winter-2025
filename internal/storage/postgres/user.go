@@ -38,6 +38,45 @@ func (r *userRepository) SendCoins(ctx context.Context, transfer *entity.Transfe
 		}
 	}()
 
+	err = r.checkUsersCoinsForUpdate(ctx, tx, transfer)
+	if err != nil {
+		return err
+	}
+
+	err = r.updateUsersCoins(ctx, tx, transfer)
+	if err != nil {
+		return err
+	}
+
+	err = r.saveTransactionHistory(ctx, tx, transfer)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return fmt.Errorf("commiting transaction error: %w", err)
+	}
+	return nil
+}
+
+func (r *userRepository) GetCoinsHistory(ctx context.Context, username string) (int32, *entity.CoinsHistory, error) {
+	coins, err := r.getUserCoins(ctx, username)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	coinsHistory, err := r.getUserTransactions(ctx, username)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return coins, coinsHistory, nil
+}
+
+func (r *userRepository) checkUsersCoinsForUpdate(ctx context.Context,
+	tx pgx.Tx, transfer *entity.TransferCoins,
+) error {
 	query, args, err := r.builder.Select("coins").
 		From("users").
 		Where(squirrel.Or{
@@ -58,11 +97,14 @@ func (r *userRepository) SendCoins(ctx context.Context, transfer *entity.Transfe
 		query,
 		args...,
 	)
+	if err != nil {
+		return fmt.Errorf("executing get user coins query: %w", err)
+	}
 	for rows.Next() {
 		var tmp int32
 		err = rows.Scan(&tmp)
 		if err != nil {
-			return fmt.Errorf("getting user coins: %w", err)
+			return fmt.Errorf("scanning user coins: %w", err)
 		}
 		usersCoins[index] = tmp
 		index++
@@ -89,7 +131,11 @@ func (r *userRepository) SendCoins(ctx context.Context, transfer *entity.Transfe
 		return err
 	}
 
-	query, args, err = r.builder.Update("users").
+	return nil
+}
+
+func (r *userRepository) updateUsersCoins(ctx context.Context, tx pgx.Tx, transfer *entity.TransferCoins) error {
+	query, args, err := r.builder.Update("users").
 		Set("coins", squirrel.Expr("coins - ?", transfer.Amount)).
 		Where(squirrel.Eq{"username": transfer.FromUser}).
 		ToSql()
@@ -123,7 +169,11 @@ func (r *userRepository) SendCoins(ctx context.Context, transfer *entity.Transfe
 		return fmt.Errorf("incrementing user \"%s\" coins: %w", transfer.ToUser, err)
 	}
 
-	query, args, err = r.builder.Insert("transactions").
+	return nil
+}
+
+func (r *userRepository) saveTransactionHistory(ctx context.Context, tx pgx.Tx, transfer *entity.TransferCoins) error {
+	query, args, err := r.builder.Insert("transactions").
 		Columns("fromUser", "toUser", "coins").
 		Values(transfer.FromUser, transfer.ToUser, transfer.Amount).
 		ToSql()
@@ -140,37 +190,20 @@ func (r *userRepository) SendCoins(ctx context.Context, transfer *entity.Transfe
 		return fmt.Errorf("saving transaction history: %w", err)
 	}
 
-	err = tx.Commit(ctx)
-	if err != nil {
-		return fmt.Errorf("commiting transaction error: %w", err)
-	}
 	return nil
 }
 
-func (r *userRepository) GetCoinsHistory(ctx context.Context, username string) (int32, *entity.CoinsHistory, error) {
-	tx, err := r.db.Begin(ctx)
-	if err != nil {
-		return 0, nil, fmt.Errorf("create transaction: %w", err)
-	}
-	defer func() {
-		if err != nil {
-			rollbackErr := tx.Rollback(ctx)
-			if rollbackErr != nil {
-				err = fmt.Errorf("%v: %w", rollbackErr, err)
-			}
-		}
-	}()
-
+func (r *userRepository) getUserCoins(ctx context.Context, username string) (int32, error) {
 	query, args, err := r.builder.Select("coins").
 		From("users").
 		Where(squirrel.Eq{"username": username}).
 		ToSql()
 	if err != nil {
-		return 0, nil, fmt.Errorf("building getting sent transactions query: %w", err)
+		return 0, fmt.Errorf("building getting user coins query: %w", err)
 	}
 
 	var coins int32
-	err = tx.QueryRow(
+	err = r.db.QueryRow(
 		ctx,
 		query,
 		args...,
@@ -179,27 +212,31 @@ func (r *userRepository) GetCoinsHistory(ctx context.Context, username string) (
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, nil, errs.UserNotFound
+			return 0, errs.UserNotFound
 		}
-		return 0, nil, fmt.Errorf("getting user coins: %w", err)
+		return 0, fmt.Errorf("getting user coins: %w", err)
 	}
 
-	query, args, err = r.builder.Select("fromUser", "coins").
+	return coins, nil
+}
+
+func (r *userRepository) getUserTransactions(ctx context.Context, username string) (*entity.CoinsHistory, error) {
+	query, args, err := r.builder.Select("fromUser", "coins").
 		From("transactions").
 		Where(squirrel.Eq{"toUser": username}).
 		OrderBy("time desc").
 		ToSql()
 	if err != nil {
-		return 0, nil, fmt.Errorf("building getting received transactions query: %w", err)
+		return nil, fmt.Errorf("building getting received transactions query: %w", err)
 	}
 
-	rows, err := tx.Query(
+	rows, err := r.db.Query(
 		ctx,
 		query,
 		args...,
 	)
 	if err != nil {
-		return 0, nil, fmt.Errorf("getting received transactions: %w", err)
+		return nil, fmt.Errorf("getting received transactions: %w", err)
 	}
 	defer rows.Close()
 
@@ -212,7 +249,7 @@ func (r *userRepository) GetCoinsHistory(ctx context.Context, username string) (
 			&tmp.Coins,
 		)
 		if err != nil {
-			return 0, nil, fmt.Errorf("scanning transaction from user: %w", err)
+			return nil, fmt.Errorf("scanning transaction from user: %w", err)
 		}
 		coinsHistory.Received = append(coinsHistory.Received, tmp)
 	}
@@ -223,16 +260,16 @@ func (r *userRepository) GetCoinsHistory(ctx context.Context, username string) (
 		OrderBy("time desc").
 		ToSql()
 	if err != nil {
-		return 0, nil, fmt.Errorf("building getting sent transactions query: %w", err)
+		return nil, fmt.Errorf("building getting sent transactions query: %w", err)
 	}
 
-	rows, err = tx.Query(
+	rows, err = r.db.Query(
 		ctx,
 		query,
 		args...,
 	)
 	if err != nil {
-		return 0, nil, fmt.Errorf("getting sent transactions: %w", err)
+		return nil, fmt.Errorf("getting sent transactions: %w", err)
 	}
 	defer rows.Close()
 
@@ -244,14 +281,10 @@ func (r *userRepository) GetCoinsHistory(ctx context.Context, username string) (
 			&tmp.Coins,
 		)
 		if err != nil {
-			return 0, nil, fmt.Errorf("scanning transaction from user: %w", err)
+			return nil, fmt.Errorf("scanning transaction to user: %w", err)
 		}
 		coinsHistory.Sent = append(coinsHistory.Sent, tmp)
 	}
 
-	err = tx.Commit(ctx)
-	if err != nil {
-		return 0, nil, fmt.Errorf("commiting transaction: %w", err)
-	}
-	return coins, coinsHistory, nil
+	return coinsHistory, nil
 }
