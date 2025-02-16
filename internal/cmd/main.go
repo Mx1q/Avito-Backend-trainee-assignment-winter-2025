@@ -6,6 +6,7 @@ import (
 	loggerPackage "Avito-Backend-trainee-assignment-winter-2025/internal/pkg/logger"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/storage/postgres"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/web/handlers"
+	"Avito-Backend-trainee-assignment-winter-2025/internal/web/middlewares"
 	"context"
 	"fmt"
 	"os"
@@ -13,7 +14,6 @@ import (
 	"syscall"
 	"time"
 
-	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -61,7 +61,7 @@ func main() {
 	r.Route("/api", func(r fiber.Router) {
 		r.Post("/auth", handlers.FAuthHandler(app))
 
-		r.Use(jwtMiddleware(cfg.Jwt.Key))
+		r.Use(middlewares.JwtMiddleware(cfg.Jwt.Key))
 		r.Get("/buy/:item", handlers.FBuyItemHandler(app))
 
 		r.Post("/sendCoin", handlers.FSendCoinsHandler(app))
@@ -84,18 +84,5 @@ func main() {
 		log.Fatal(err)
 	} else {
 		log.Info(syscall.Getpid(), " successful graceful shutdown!")
-	}
-}
-
-func jwtMiddleware(jwtKey string) fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		return jwtware.New(jwtware.Config{
-			SigningKey: jwtware.SigningKey{Key: []byte(jwtKey)},
-			ErrorHandler: func(c *fiber.Ctx, err error) error {
-				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-					"errors": err.Error(),
-				})
-			},
-		})(ctx)
 	}
 }
