@@ -148,7 +148,7 @@ func (s *IUserRepoSuite) Test_userRepository_GetCoinsHistory() {
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tt.coinsHistory, history)
-				require.Equal(t, UserCoinsOnRegister, coins)
+				require.Equal(t, userCoinsOnRegister, coins)
 			}
 		})
 	}
@@ -168,7 +168,7 @@ func (s *IUserRepoSuite) Test_userRepository_SendCoins() {
 			transfer: &entity.TransferCoins{
 				FromUser: "first",
 				ToUser:   "second",
-				Amount:   UserCoinsOnRegister,
+				Amount:   userCoinsOnRegister,
 			},
 			beforeTest: func(t *testing.T, transfer *entity.TransferCoins) {
 				query, args, err := s.builder.
@@ -237,8 +237,8 @@ func (s *IUserRepoSuite) Test_userRepository_SendCoins() {
 				require.NoError(t, err)
 				require.Equal(t, transfer, transactionHistory)
 
-				if toUserCoins != UserCoinsOnRegister+transfer.Amount ||
-					fromUserCoins != UserCoinsOnRegister-transfer.Amount {
+				if toUserCoins != userCoinsOnRegister+transfer.Amount ||
+					fromUserCoins != userCoinsOnRegister-transfer.Amount {
 					return fmt.Errorf("invalid amount of coins")
 				}
 				return nil
@@ -250,7 +250,7 @@ func (s *IUserRepoSuite) Test_userRepository_SendCoins() {
 			transfer: &entity.TransferCoins{
 				FromUser: "first",
 				ToUser:   "second",
-				Amount:   UserCoinsOnRegister + 1,
+				Amount:   userCoinsOnRegister + 1,
 			},
 			beforeTest: func(t *testing.T, transfer *entity.TransferCoins) {
 				query, args, err := s.builder.
@@ -299,8 +299,8 @@ func (s *IUserRepoSuite) Test_userRepository_SendCoins() {
 				).Scan(&toUserCoins)
 				require.NoError(t, err)
 
-				if fromUserCoins != UserCoinsOnRegister ||
-					toUserCoins != UserCoinsOnRegister {
+				if fromUserCoins != userCoinsOnRegister ||
+					toUserCoins != userCoinsOnRegister {
 					return fmt.Errorf("user dont have needed coins, amount of coins was changed")
 				}
 				return nil
@@ -313,7 +313,7 @@ func (s *IUserRepoSuite) Test_userRepository_SendCoins() {
 			transfer: &entity.TransferCoins{
 				FromUser: "first",
 				ToUser:   "second",
-				Amount:   UserCoinsOnRegister,
+				Amount:   userCoinsOnRegister,
 			},
 			beforeTest: func(t *testing.T, transfer *entity.TransferCoins) {
 				query, args, err := s.builder.
@@ -346,7 +346,7 @@ func (s *IUserRepoSuite) Test_userRepository_SendCoins() {
 				).Scan(&toUserCoins)
 				require.NoError(t, err)
 
-				if toUserCoins != UserCoinsOnRegister {
+				if toUserCoins != userCoinsOnRegister {
 					return fmt.Errorf("fromUser not found, but toUser coins was changed")
 				}
 				return nil
@@ -359,7 +359,7 @@ func (s *IUserRepoSuite) Test_userRepository_SendCoins() {
 			transfer: &entity.TransferCoins{
 				FromUser: "first",
 				ToUser:   "second",
-				Amount:   UserCoinsOnRegister,
+				Amount:   userCoinsOnRegister,
 			},
 			beforeTest: func(t *testing.T, transfer *entity.TransferCoins) {
 				query, args, err := s.builder.
@@ -392,7 +392,7 @@ func (s *IUserRepoSuite) Test_userRepository_SendCoins() {
 				).Scan(&fromUserCoins)
 				require.NoError(t, err)
 
-				if fromUserCoins != UserCoinsOnRegister {
+				if fromUserCoins != userCoinsOnRegister {
 					return fmt.Errorf("toUser not found, but fromUser coins was changed")
 				}
 				return nil
