@@ -104,7 +104,8 @@ func createContainer(ctx context.Context) (testcontainers.Container, *pgxpool.Po
 	db, err := postgres.NewConn(context.Background(), postgresConfig)
 	if err != nil {
 		return container, db,
-			fmt.Sprintf("%s:%d", postgresConfig.Host, postgresConfig.Port), fmt.Errorf("failed to establish database connection: %v", err)
+			fmt.Sprintf("%s:%d", postgresConfig.Host, postgresConfig.Port),
+			fmt.Errorf("failed to establish database connection: %v", err)
 	}
 
 	return container, db,

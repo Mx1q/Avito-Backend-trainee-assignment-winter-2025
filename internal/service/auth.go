@@ -16,7 +16,9 @@ type AuthService struct {
 	tokenManager jwt.ITokenManager
 }
 
-func NewAuthService(repo entity.IAuthRepository, logger logger.ILogger, hasher jwt.IHashCrypto, tokenManager jwt.ITokenManager) entity.IAuthService {
+func NewAuthService(repo entity.IAuthRepository, logger logger.ILogger,
+	hasher jwt.IHashCrypto, tokenManager jwt.ITokenManager,
+) entity.IAuthService {
 	return &AuthService{
 		logger:       logger,
 		authRepo:     repo,
