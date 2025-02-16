@@ -9,3 +9,4 @@ linters:
     - govet
     - errcheck
     - staticcheck
+    - lll
