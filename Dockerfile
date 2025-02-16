@@ -8,4 +8,4 @@ RUN go build -o /build ./internal/cmd \
 
 EXPOSE 8080
 
-CMD ["/build"]
+CMD ["sh", "-c", "/build"]
