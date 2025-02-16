@@ -1,7 +1,7 @@
 package models
 
-type Info struct {
-	Coins       int32        `json:"coins,omitempty"`
-	Inventory   []*Item      `json:"inventory,omitempty"`
-	CoinHistory *CoinHistory `json:"coinHistory,omitempty"`
+type InfoResponse struct {
+	Coins       int32        `json:"coins"`
+	Inventory   []*Item      `json:"inventory"`
+	CoinHistory *CoinHistory `json:"coinHistory"`
 }
