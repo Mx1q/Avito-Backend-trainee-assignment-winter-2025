@@ -71,8 +71,19 @@ func (r *userRepository) SendCoins(ctx context.Context, transfer *entity.Transfe
 		return err
 	}
 
-	if transfer.FromUser > transfer.ToUser && usersCoins[1] < transfer.Amount ||
-		transfer.FromUser < transfer.ToUser && usersCoins[0] < transfer.Amount {
+	var firstNameGreater bool
+	query = "select $1 > $2" // why postgres compares strings in a different way...
+	err = r.db.QueryRow(ctx,
+		query,
+		transfer.FromUser,
+		transfer.ToUser,
+	).Scan(&firstNameGreater)
+	if err != nil {
+		return fmt.Errorf("comparing users")
+	}
+
+	if firstNameGreater && usersCoins[1] < transfer.Amount ||
+		!firstNameGreater && usersCoins[0] < transfer.Amount {
 		err = errs.NotEnoughCoins
 		return err
 	}
