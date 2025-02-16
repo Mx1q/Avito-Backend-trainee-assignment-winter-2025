@@ -15,11 +15,11 @@ export const options = {
 			maxVUs: 3000,
 			startRate: 0,
 			timeUnit: '1s',
-			// stages: [ // auth only
-			// 	{ duration: '1m', target: 1000 },
-			// 	{ duration: '3m', target: 1000 },
-			// 	{ duration: '1m', target: 0 },
-			// ],
+			stages: [ // auth only
+				{ duration: '1m', target: 1000 },
+				{ duration: '3m', target: 1000 },
+				{ duration: '1m', target: 0 },
+			],
 			// stages: [ // auth + buy item
 			// 	{ duration: '1m', target: 500 },
 			// 	{ duration: '3m', target: 500 },
@@ -30,11 +30,11 @@ export const options = {
 			// 	{ duration: '3m', target: 333 },
 			// 	{ duration: '1m', target: 0 },
 			// ],
-			stages: [ // auth + buy item + send coins + get info
-				{ duration: '1m', target: 250 },
-				{ duration: '3m', target: 250 },
-				{ duration: '1m', target: 0 },
-			],
+			// stages: [ // auth + buy item + send coins + get info
+			// 	{ duration: '1m', target: 250 },
+			// 	{ duration: '3m', target: 250 },
+			// 	{ duration: '1m', target: 0 },
+			// ],
 		}
 	},
 	thresholds: {
@@ -170,11 +170,9 @@ export function sendCoinsLoadTest(token) {
 
 export default function () {
 	let token = authLoadTest();
-	buyItemLoadTest(token)
-
-	sendCoinsLoadTest(token)
-
-	getInfoLoadTest(token)
+	// buyItemLoadTest(token)
+	// sendCoinsLoadTest(token)
+	// getInfoLoadTest(token)
 
 	sleep(1);
 }
