@@ -7,9 +7,10 @@ import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/service"
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestUserService_GetCoinsHistory(t *testing.T) {

@@ -7,6 +7,7 @@ import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/pkg/logger"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/service"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/storage/postgres"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

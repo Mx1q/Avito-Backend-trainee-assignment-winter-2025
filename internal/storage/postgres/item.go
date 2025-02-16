@@ -5,6 +5,7 @@ import (
 	errs "Avito-Backend-trainee-assignment-winter-2025/internal/pkg/errors"
 	"context"
 	"fmt"
+
 	"github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5/pgxpool"
 )

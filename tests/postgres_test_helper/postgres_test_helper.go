@@ -6,6 +6,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"path/filepath"
+	"runtime"
+	"strconv"
+	"time"
+
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -13,11 +19,6 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"log"
-	"path/filepath"
-	"runtime"
-	"strconv"
-	"time"
 )
 
 var postgresConfig = &config.PostgresConfig{
@@ -68,7 +69,7 @@ func (tdb *TestDatabase) TearDown() {
 }
 
 func createContainer(ctx context.Context) (testcontainers.Container, *pgxpool.Pool, string, error) {
-	var env = map[string]string{
+	env := map[string]string{
 		"POSTGRES_PASSWORD": postgresConfig.Password,
 		"POSTGRES_USER":     postgresConfig.User,
 		"POSTGRES_DB":       postgresConfig.DBName,

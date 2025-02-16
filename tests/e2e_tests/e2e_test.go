@@ -4,12 +4,13 @@ import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/web/models"
 	"context"
 	"fmt"
+	"net/http"
+	"testing"
+
 	"github.com/Masterminds/squirrel"
 	"github.com/gavv/httpexpect/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"net/http"
-	"testing"
 )
 
 type E2ESuite struct {

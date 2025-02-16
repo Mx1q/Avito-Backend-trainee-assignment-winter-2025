@@ -6,10 +6,11 @@ import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/storage/postgres"
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/Masterminds/squirrel"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"testing"
 )
 
 type IItemRepoSuite struct {

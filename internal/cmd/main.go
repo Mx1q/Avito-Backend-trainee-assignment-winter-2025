@@ -8,15 +8,16 @@ import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/web/handlers"
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 const (

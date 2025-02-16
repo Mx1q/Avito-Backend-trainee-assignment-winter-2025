@@ -8,8 +8,9 @@ import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/web/models"
 	"errors"
 	"fmt"
-	"github.com/gofiber/fiber/v2"
 	"log"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 func errorMap(errText string) *fiber.Map {

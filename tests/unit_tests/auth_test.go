@@ -7,9 +7,10 @@ import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/service"
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestAuthService_Auth(t *testing.T) {

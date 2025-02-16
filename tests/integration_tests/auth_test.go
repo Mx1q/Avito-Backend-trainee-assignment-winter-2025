@@ -6,11 +6,12 @@ import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/storage/postgres"
 	"context"
 	"errors"
+	"testing"
+
 	"github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"testing"
 )
 
 const UserCoinsOnRegister = int32(1000)

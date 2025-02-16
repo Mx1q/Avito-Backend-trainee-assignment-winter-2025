@@ -6,16 +6,17 @@ import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/pkg/config"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/web/handlers"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 const (

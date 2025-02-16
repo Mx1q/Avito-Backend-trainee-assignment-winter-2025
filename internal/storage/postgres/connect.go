@@ -4,6 +4,7 @@ import (
 	"Avito-Backend-trainee-assignment-winter-2025/internal/pkg/config"
 	"context"
 	"fmt"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

@@ -2,9 +2,10 @@ package integration_tests
 
 import (
 	"Avito-Backend-trainee-assignment-winter-2025/tests/postgres_test_helper"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"os"
 	"testing"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var testDbInstance *pgxpool.Pool

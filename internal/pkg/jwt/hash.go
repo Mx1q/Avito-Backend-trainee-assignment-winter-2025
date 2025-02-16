@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"fmt"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -12,8 +13,7 @@ type IHashCrypto interface {
 	VerifyPassword(password, hash string) bool
 }
 
-type HashCrypto struct {
-}
+type HashCrypto struct{}
 
 func NewHashCrypto() IHashCrypto {
 	return HashCrypto{}
