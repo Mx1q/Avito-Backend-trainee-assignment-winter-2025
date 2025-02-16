@@ -34,8 +34,8 @@ func (s *IItemRepoSuite) Test_itemRepository_BuyItem() {
 	testCases := []struct {
 		name        string
 		purchase    *entity.Purchase
-		beforeTest  func()
-		check       func(purchase *entity.Purchase) error
+		beforeTest  func(t *testing.T)
+		check       func(t *testing.T, purchase *entity.Purchase) error
 		wantErr     bool
 		requiredErr error
 	}{
@@ -45,28 +45,28 @@ func (s *IItemRepoSuite) Test_itemRepository_BuyItem() {
 				Username: "user",
 				ItemName: "cup",
 			},
-			beforeTest: func() {
+			beforeTest: func(t *testing.T) {
 				query, args, err := s.builder.
 					Insert("users").
 					Columns("username", "password").
 					Values("user", "hashedPass").
 					ToSql()
-				require.NoError(s.T(), err)
+				require.NoError(t, err)
 
 				_, err = testDbInstance.Exec(
 					context.Background(),
 					query,
 					args...,
 				)
-				require.NoError(s.T(), err)
+				require.NoError(t, err)
 			},
-			check: func(purchase *entity.Purchase) error {
+			check: func(t *testing.T, purchase *entity.Purchase) error {
 				query, args, err := s.builder.
 					Select("item").
 					From("purchases").
 					Where(squirrel.Eq{"username": purchase.Username}).
 					ToSql()
-				require.NoError(s.T(), err)
+				require.NoError(t, err)
 
 				var purchaseHistory string
 				err = testDbInstance.QueryRow(
@@ -74,7 +74,7 @@ func (s *IItemRepoSuite) Test_itemRepository_BuyItem() {
 					query,
 					args...,
 				).Scan(&purchaseHistory)
-				require.NoError(s.T(), err)
+				require.NoError(t, err)
 
 				if purchase.ItemName != purchaseHistory {
 					return fmt.Errorf("purchase item name %s does not match history %s", purchaseHistory, purchase.ItemName)
@@ -89,20 +89,20 @@ func (s *IItemRepoSuite) Test_itemRepository_BuyItem() {
 				Username: "user",
 				ItemName: "cup",
 			},
-			beforeTest: func() {
+			beforeTest: func(t *testing.T) {
 				query, args, err := s.builder.
 					Insert("users").
 					Columns("username", "password", "coins").
 					Values("user", "hashedPass", 0).
 					ToSql()
-				require.NoError(s.T(), err)
+				require.NoError(t, err)
 
 				_, err = testDbInstance.Exec(
 					context.Background(),
 					query,
 					args...,
 				)
-				require.NoError(s.T(), err)
+				require.NoError(t, err)
 			},
 			wantErr:     true,
 			requiredErr: errs.NotEnoughCoins,
@@ -113,20 +113,20 @@ func (s *IItemRepoSuite) Test_itemRepository_BuyItem() {
 				Username: "user",
 				ItemName: "undefined",
 			},
-			beforeTest: func() {
+			beforeTest: func(t *testing.T) {
 				query, args, err := s.builder.
 					Insert("users").
 					Columns("username", "password", "coins").
 					Values("user", "hashedPass", 0).
 					ToSql()
-				require.NoError(s.T(), err)
+				require.NoError(t, err)
 
 				_, err = testDbInstance.Exec(
 					context.Background(),
 					query,
 					args...,
 				)
-				require.NoError(s.T(), err)
+				require.NoError(t, err)
 			},
 			wantErr:     true,
 			requiredErr: errs.ItemNotFound,
@@ -148,13 +148,13 @@ func (s *IItemRepoSuite) Test_itemRepository_BuyItem() {
 			})
 
 			if tt.beforeTest != nil {
-				tt.beforeTest()
+				tt.beforeTest(s.T())
 			}
 
 			err := s.repo.BuyItem(context.Background(), tt.purchase)
 			var checkErr error
 			if tt.check != nil {
-				checkErr = tt.check(tt.purchase)
+				checkErr = tt.check(s.T(), tt.purchase)
 			}
 
 			if tt.wantErr {

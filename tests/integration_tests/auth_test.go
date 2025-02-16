@@ -41,7 +41,7 @@ func (s *IAuthSuite) TestAuthRepository_Register() {
 	testCases := []struct {
 		name        string
 		authInfo    *entity.Auth
-		beforeTest  func()
+		beforeTest  func(t *testing.T)
 		check       func(t *testing.T, auth *entity.Auth) error
 		wantErr     bool
 		requiredErr error
@@ -92,20 +92,20 @@ func (s *IAuthSuite) TestAuthRepository_Register() {
 				Username: "test",
 				Password: "hashedPass",
 			},
-			beforeTest: func() {
+			beforeTest: func(t *testing.T) {
 				query, args, err := s.builder.
 					Insert("users").
 					Columns("username", "password").
 					Values("test", "hashedPass").
 					ToSql()
-				require.NoError(s.T(), err)
+				require.NoError(t, err)
 
 				_, err = testDbInstance.Exec(
 					context.Background(),
 					query,
 					args...,
 				)
-				require.NoError(s.T(), err)
+				require.NoError(t, err)
 			},
 			wantErr:     true,
 			requiredErr: errs.UserAlreadyExists,
@@ -118,7 +118,7 @@ func (s *IAuthSuite) TestAuthRepository_Register() {
 			})
 
 			if tt.beforeTest != nil {
-				tt.beforeTest()
+				tt.beforeTest(s.T())
 			}
 
 			err := s.repo.Register(context.Background(), tt.authInfo)
@@ -141,7 +141,7 @@ func (s *IAuthSuite) TestAuthRepository_GetByUsername() {
 	testCases := []struct {
 		name        string
 		username    string
-		beforeTest  func()
+		beforeTest  func(t *testing.T)
 		check       func(t *testing.T, username string, authFromRepo *entity.Auth) error
 		wantErr     bool
 		requiredErr error
@@ -149,20 +149,20 @@ func (s *IAuthSuite) TestAuthRepository_GetByUsername() {
 		{
 			name:     "успешное получение",
 			username: "test",
-			beforeTest: func() {
+			beforeTest: func(t *testing.T) {
 				query, args, err := s.builder.
 					Insert("users").
 					Columns("username", "password").
 					Values("test", "hashedPass").
 					ToSql()
-				require.NoError(s.T(), err)
+				require.NoError(t, err)
 
 				_, err = testDbInstance.Exec(
 					context.Background(),
 					query,
 					args...,
 				)
-				require.NoError(s.T(), err)
+				require.NoError(t, err)
 			},
 			check: func(t *testing.T, username string, authFromRepo *entity.Auth) error {
 				checkQuery, args, err := s.builder.
@@ -212,7 +212,7 @@ func (s *IAuthSuite) TestAuthRepository_GetByUsername() {
 			})
 
 			if tt.beforeTest != nil {
-				tt.beforeTest()
+				tt.beforeTest(s.T())
 			}
 
 			user, err := s.repo.GetByUsername(context.Background(), tt.username)
