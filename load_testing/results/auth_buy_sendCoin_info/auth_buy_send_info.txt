@@ -1,0 +1,30 @@
+  ✓ Status is 200
+  ✓ Response contains token
+  ✗ Response time is less than 50ms
+  ↳  99% — ✓ 238542 / ✗ 206
+  ✓ Buy item status is 200
+  ✓ Send coins status is 200 or 400
+  ✓ Get info status is 200
+  ✓ Response body includes coins
+  ✓ Response body includes inventory
+  ✓ Response body includes coinHistory
+
+  checks.........................: 99.97%  716038 out of 716244
+  data_received..................: 50 MB   167 kB/s
+  data_sent......................: 76 MB   252 kB/s
+  dropped_iterations.............: 313     1.039737/s
+  http_req_blocked...............: avg=2.44µs min=625ns    med=1.41µs  max=3.13ms   p(90)=2.45µs  p(95)=3.41µs 
+  http_req_connecting............: avg=240ns  min=0s       med=0s      max=2.84ms   p(90)=0s      p(95)=0s     
+✓ http_req_duration..............: avg=2.68ms min=57.62µs  med=1.91ms  max=325.76ms p(90)=5.81ms  p(95)=7.11ms 
+    { expected_response:true }...: avg=2.77ms min=258.21µs med=1.95ms  max=325.76ms p(90)=5.92ms  p(95)=7.17ms 
+  http_req_failed................: 4.20%   10037 out of 238748
+  http_req_receiving.............: avg=25.4µs min=4.75µs   med=17.37µs max=11.06ms  p(90)=35.54µs p(95)=50.95µs
+  http_req_sending...............: avg=8.05µs min=2.04µs   med=4.91µs  max=4.22ms   p(90)=10.79µs p(95)=15.04µs
+  http_req_tls_handshaking.......: avg=0s     min=0s       med=0s      max=0s       p(90)=0s      p(95)=0s     
+  http_req_waiting...............: avg=2.64ms min=42.95µs  med=1.88ms  max=325.72ms p(90)=5.78ms  p(95)=7.07ms 
+  http_reqs......................: 238748  793.083861/s
+  iteration_duration.............: avg=1.01s  min=1s       med=1s      max=1.42s    p(90)=1.01s   p(95)=1.02s  
+  iterations.....................: 59687   198.270965/s
+✗ slow_responses.................: 100.00% 206 out of 206
+  vus............................: 1       min=1                max=301
+  vus_max........................: 323     min=10               max=323
