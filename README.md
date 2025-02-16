@@ -96,4 +96,4 @@ docker compose up -d k6
 ```
 
 > [!NOTE]
-> Результаты тестов в логах контейнера k6
+> Результаты тестов в логах контейнера k6 ([dashboard графаны](./load_testing/k6%20Load%20Testing%20Results-1739730087393.json "grafana dashboard"))
