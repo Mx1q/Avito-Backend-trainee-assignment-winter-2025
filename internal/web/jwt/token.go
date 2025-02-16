@@ -1,26 +1,18 @@
 package jwt
 
 import (
-	"context"
 	"fmt"
-	"github.com/go-chi/jwtauth/v5"
+	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 )
 
-func GetStringClaimFromJWT(ctx context.Context, claim string) (strVal string, err error) {
-	_, claims, err := jwtauth.FromContext(ctx)
-	if err != nil {
-		return "", fmt.Errorf("getting claims from JWT: %w", err)
+func FGetStringClaimFromJWT(ctx *fiber.Ctx, claim string) (string, error) {
+	user := ctx.Locals("user").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+	strVal := claims[claim].(string)
+	var err error
+	if strVal == "" {
+		err = fmt.Errorf("empty claim")
 	}
-
-	val, ok := claims[claim]
-	if !ok {
-		return "", fmt.Errorf("failed getting claim \"%s\" from JWT token", claim)
-	}
-
-	strVal, ok = val.(string)
-	if !ok {
-		return "", fmt.Errorf("converting interface to string")
-	}
-
-	return strVal, nil
+	return strVal, err
 }

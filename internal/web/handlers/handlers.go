@@ -6,106 +6,83 @@ import (
 	errs "Avito-Backend-trainee-assignment-winter-2025/internal/pkg/errors"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/web/jwt"
 	"Avito-Backend-trainee-assignment-winter-2025/internal/web/models"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/go-chi/chi/v5"
-	"net/http"
-	"time"
+	"github.com/gofiber/fiber/v2"
+	"log"
 )
 
-const (
-	TokenExpirationMinutes = 60 * 24
-)
-
-type ErrorResponse struct {
-	Error string `json:"errors,omitempty"`
+func errorMap(errText string) *fiber.Map {
+	return &fiber.Map{
+		"errors": errText,
+	}
 }
 
-func errorResponse(w http.ResponseWriter, err string, statusCode int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(ErrorResponse{Error: err})
-}
-
-func AuthHandler(app *app.App) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func FAuthHandler(app *app.App) fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
 		const prompt = "Authorization"
 		var req models.Auth
-		err := json.NewDecoder(r.Body).Decode(&req)
+		err := ctx.BodyParser(&req)
 		if err != nil {
-			errorResponse(w, fmt.Errorf("%s: %s", prompt, "invalid data").Error(), http.StatusBadRequest)
-			return
+			return ctx.Status(fiber.StatusBadRequest).JSON(errorMap(fmt.Sprintf("%s: %s", prompt, errs.InvalidData.Error())))
 		}
 
 		ua := models.ToAuthEntity(&req)
-		token, err := app.AuthService.Auth(r.Context(), ua)
+		token, err := app.AuthService.Auth(ctx.Context(), ua)
 		if err != nil {
 			if errors.Is(err, errs.InvalidData) {
-				errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusBadRequest)
+				return ctx.Status(fiber.StatusBadRequest).JSON(errorMap(fmt.Sprintf("%s: %s", prompt, err.Error())))
 			} else if errors.Is(err, errs.InvalidCredentials) {
-				errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusUnauthorized)
+				return ctx.Status(fiber.StatusUnauthorized).JSON(errorMap(fmt.Sprintf("%s: %s", prompt, err.Error())))
 			} else {
-				errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusInternalServerError)
+				return ctx.Status(fiber.StatusInternalServerError).JSON(errorMap(fmt.Sprintf("%s: %s", prompt, err.Error())))
 			}
-			return
 		}
 
-		cookie := http.Cookie{
-			Name:    "access_token",
-			Value:   token,
-			Path:    "/",
-			Secure:  true,
-			Expires: time.Now().Add(TokenExpirationMinutes * time.Minute),
-		}
-		http.SetCookie(w, &cookie)
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(models.AuthResponse{Token: token})
+		return ctx.Status(fiber.StatusOK).JSON(models.AuthResponse{Token: token})
 	}
 }
 
-func BuyItemHandler(app *app.App) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func FBuyItemHandler(app *app.App) fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
 		const prompt = "Buying item"
 
-		itemName := chi.URLParam(r, "item")
-		username, err := jwt.GetStringClaimFromJWT(r.Context(), "sub")
+		itemName := ctx.Params("item")
+		username, err := jwt.FGetStringClaimFromJWT(ctx, "sub")
 		if err != nil {
-			errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusUnauthorized)
+			return ctx.Status(fiber.StatusUnauthorized).JSON(errorMap(fmt.Sprintf("%s: %s", prompt, "invalid token")))
 		}
 
-		purchase := entity.Purchase{
+		purchase := &entity.Purchase{
 			Username: username,
 			ItemName: itemName,
 		}
-		err = app.ItemService.BuyItem(r.Context(), &purchase)
+		err = app.ItemService.BuyItem(ctx.Context(), purchase)
 		if err != nil {
-			errorResponse(w, fmt.Errorf("%s: %s", prompt,
-				http.StatusText(http.StatusInternalServerError)).Error(), http.StatusInternalServerError)
-			return
+			if errors.Is(err, errs.ItemNotFound) || errors.Is(err, errs.UserNotFound) ||
+				errors.Is(err, errs.NotEnoughCoins) {
+				return ctx.Status(fiber.StatusBadRequest).JSON(errorMap(fmt.Sprintf("%s: %s", prompt, err.Error())))
+			}
+			return ctx.Status(fiber.StatusInternalServerError).JSON(errorMap(fmt.Sprintf("%s: %s", prompt, err.Error())))
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
+		return ctx.SendStatus(fiber.StatusOK)
 	}
 }
 
-func SendCoinsHandler(app *app.App) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func FSendCoinsHandler(app *app.App) fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
 		const prompt = "Sending coins"
 
-		fromUser, err := jwt.GetStringClaimFromJWT(r.Context(), "sub")
+		fromUser, err := jwt.FGetStringClaimFromJWT(ctx, "sub")
 		if err != nil {
-			errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusUnauthorized)
+			return ctx.Status(fiber.StatusUnauthorized).JSON(errorMap(fmt.Sprintf("%s: %s", prompt, "invalid token")))
 		}
 
 		var req models.CoinsTransfer
-		err = json.NewDecoder(r.Body).Decode(&req)
+		err = ctx.BodyParser(&req)
 		if err != nil {
-			errorResponse(w, fmt.Errorf("%s: %s", prompt, "invalid data").Error(), http.StatusBadRequest)
-			return
+			return ctx.Status(fiber.StatusBadRequest).JSON(errorMap(fmt.Sprintf("%s: %s", prompt, errs.InvalidData.Error())))
 		}
 
 		transfer := &entity.TransferCoins{
@@ -113,52 +90,49 @@ func SendCoinsHandler(app *app.App) http.HandlerFunc {
 			ToUser:   req.ToUser,
 			Amount:   req.Amount,
 		}
-		err = app.UserService.SendCoins(r.Context(), transfer)
+		err = app.UserService.SendCoins(ctx.Context(), transfer)
 		if err != nil {
-			if errors.Is(err, errs.InvalidData) {
-				errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusBadRequest)
-			} else {
-				errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusInternalServerError)
+			log.Println(transfer, err)
+
+			if errors.Is(err, errs.InvalidData) || errors.Is(err, errs.NotEnoughCoins) ||
+				errors.Is(err, errs.UserNotFound) {
+				return ctx.Status(fiber.StatusBadRequest).JSON(errorMap(fmt.Sprintf("%s: %s", prompt, err.Error())))
 			}
-			return
+			return ctx.Status(fiber.StatusInternalServerError).JSON(errorMap(fmt.Sprintf("%s: %s", prompt, err.Error())))
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
+		return ctx.SendStatus(fiber.StatusOK)
 	}
 }
 
-func GetUserInfoHandler(app *app.App) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func FGetUserInfoHandler(app *app.App) fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
 		const prompt = "Getting user info"
 
-		username, err := jwt.GetStringClaimFromJWT(r.Context(), "sub")
+		username, err := jwt.FGetStringClaimFromJWT(ctx, "sub")
 		if err != nil {
-			errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusUnauthorized)
+			return ctx.Status(fiber.StatusUnauthorized).JSON(errorMap(fmt.Sprintf("%s: %s", prompt, "invalid token")))
 		}
 
-		items, err := app.ItemService.GetInventory(r.Context(), username)
-		if err != nil {
-			if errors.Is(err, errs.InvalidData) {
-				errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusBadRequest)
-			} else {
-				errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusInternalServerError)
-			}
-			return
-		}
-
-		coins, coinHistory, err := app.UserService.GetCoinsHistory(r.Context(), username)
+		items, err := app.ItemService.GetInventory(ctx.Context(), username)
 		if err != nil {
 			if errors.Is(err, errs.InvalidData) {
-				errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusBadRequest)
-			} else {
-				errorResponse(w, fmt.Errorf("%s: %w", prompt, err).Error(), http.StatusInternalServerError)
+				return ctx.Status(fiber.StatusBadRequest).JSON(errorMap(fmt.Sprintf("%s: %s", prompt, err.Error())))
 			}
+			return ctx.Status(fiber.StatusInternalServerError).JSON(errorMap(fmt.Sprintf("%s: %s", prompt, err.Error())))
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(models.Info{
+		coins, coinHistory, err := app.UserService.GetCoinsHistory(ctx.Context(), username)
+		if err != nil {
+			if errors.Is(err, errs.InvalidData) {
+				return ctx.Status(fiber.StatusBadRequest).JSON(errorMap(fmt.Sprintf("%s: %s", prompt, err.Error())))
+			}
+			return ctx.Status(fiber.StatusInternalServerError).JSON(errorMap(fmt.Sprintf("%s: %s", prompt, err.Error())))
+		}
+
+		log.Println(coins)
+
+		return ctx.Status(fiber.StatusOK).JSON(models.InfoResponse{
 			Coins:       coins,
 			Inventory:   models.ToInventoryTransport(items),
 			CoinHistory: models.ToCoinsHistoryTransport(coinHistory),
