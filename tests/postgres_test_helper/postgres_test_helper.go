@@ -61,7 +61,10 @@ func SetupTestDatabase() *TestDatabase {
 
 func (tdb *TestDatabase) TearDown() {
 	tdb.DbInstance.Close()
-	tdb.container.Terminate(context.Background())
+	err := tdb.container.Terminate(context.Background())
+	if err != nil {
+		log.Fatal("failed to tear down test database: ", err)
+	}
 }
 
 func createContainer(ctx context.Context) (testcontainers.Container, *pgxpool.Pool, string, error) {
