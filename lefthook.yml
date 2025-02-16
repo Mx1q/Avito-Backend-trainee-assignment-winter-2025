@@ -2,8 +2,7 @@ pre-commit:
   commands:
     lint:
       glob: "*.go"
-      run: golangci-lint run --fix
-      stage_fixed: true
+      run: golangci-lint run
     unit_tests:
       glob: "*.go"
       run: go test -v -cover -coverpkg "./internal/service" "./tests/unit_tests"
