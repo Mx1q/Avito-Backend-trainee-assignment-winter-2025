@@ -39,7 +39,7 @@ jobs:
     - name: Run end to end tests
       id: e2e
       if: steps.integration.outcome == 'success'
-      run: go test -v -cover -coverpkg "./internal/service" "./tests/unit_tests"
+      run: go test -v -cover -coverpkg "./internal/web/handlers" "./tests/e2e_tests"
 
   golangci:
     name: lint
