@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -36,85 +38,19 @@ func (r *itemRepository) BuyItem(ctx context.Context, purchase *entity.Purchase)
 		}
 	}()
 
-	query, args, err := r.builder.Select("coins").
-		From("users").
-		Where(squirrel.Eq{"username": purchase.Username}).
-		Suffix("for update").
-		ToSql()
+	itemPrice, err := r.checkUserCoinsForUpdate(ctx, tx, purchase)
 	if err != nil {
-		return fmt.Errorf("building getting user coins query: %w", err)
-	}
-
-	var userCoins int32
-	err = tx.QueryRow(
-		ctx,
-		query,
-		args...,
-	).Scan(
-		&userCoins,
-	)
-	if err != nil {
-		return errs.UserNotFound
-	}
-
-	query, args, err = r.builder.Select("price").
-		From("items").
-		Where(squirrel.Eq{"name": purchase.ItemName}).
-		ToSql()
-	if err != nil {
-		return fmt.Errorf("building getting item price query: %w", err)
-	}
-
-	var itemPrice int32
-	err = tx.QueryRow(
-		ctx,
-		query,
-		args...,
-	).Scan(
-		&itemPrice,
-	)
-	if err != nil {
-		return errs.ItemNotFound
-	}
-
-	if userCoins < itemPrice {
-		err = errs.NotEnoughCoins
 		return err
 	}
 
-	query, args, err = r.builder.Update("users").
-		Set("coins", userCoins-itemPrice).
-		Where(squirrel.Eq{"username": purchase.Username}).
-		ToSql()
+	err = r.decreaseUserCoinsOnItemPrice(ctx, tx, purchase.Username, itemPrice)
 	if err != nil {
-		return fmt.Errorf("building updating user coins query: %w", err)
+		return err
 	}
 
-	_, err = tx.Exec(
-		ctx,
-		query,
-		args...,
-	)
+	err = r.savePurchaseHistory(ctx, tx, purchase)
 	if err != nil {
-		return fmt.Errorf("updating user \"%s\" coins: %w", purchase.Username, err)
-	}
-
-	query, args, err = r.builder.Insert("purchases").
-		Columns("username", "item").
-		Values(purchase.Username, purchase.ItemName).
-		ToSql()
-	if err != nil {
-		return fmt.Errorf("building creating purchase query: %w", err)
-	}
-
-	_, err = tx.Exec(
-		ctx,
-		query,
-		args...,
-	)
-	if err != nil {
-		return fmt.Errorf("creating user \"%s\" item \"%s\" purchase: %w",
-			purchase.Username, purchase.ItemName, err)
+		return err
 	}
 
 	err = tx.Commit(ctx)
@@ -157,4 +93,101 @@ func (r *itemRepository) GetInventory(ctx context.Context, username string) ([]*
 	}
 
 	return items, nil
+}
+
+func (r *itemRepository) checkUserCoinsForUpdate(ctx context.Context,
+	tx pgx.Tx, purchase *entity.Purchase,
+) (int32, error) {
+	query, args, err := r.builder.Select("coins").
+		From("users").
+		Where(squirrel.Eq{"username": purchase.Username}).
+		Suffix("for update").
+		ToSql()
+	if err != nil {
+		return 0, fmt.Errorf("building getting user coins query: %w", err)
+	}
+
+	var userCoins int32
+	err = tx.QueryRow(
+		ctx,
+		query,
+		args...,
+	).Scan(
+		&userCoins,
+	)
+	if err != nil {
+		return 0, errs.UserNotFound
+	}
+
+	query, args, err = r.builder.Select("price").
+		From("items").
+		Where(squirrel.Eq{"name": purchase.ItemName}).
+		ToSql()
+	if err != nil {
+		return 0, fmt.Errorf("building getting item price query: %w", err)
+	}
+
+	var itemPrice int32
+	err = tx.QueryRow(
+		ctx,
+		query,
+		args...,
+	).Scan(
+		&itemPrice,
+	)
+	if err != nil {
+		return 0, errs.ItemNotFound
+	}
+
+	if userCoins < itemPrice {
+		err = errs.NotEnoughCoins
+		return 0, err
+	}
+
+	return itemPrice, nil
+}
+
+func (r *itemRepository) decreaseUserCoinsOnItemPrice(ctx context.Context,
+	tx pgx.Tx, username string, itemPrice int32,
+) error {
+	query, args, err := r.builder.Update("users").
+		Set("coins", squirrel.Expr("coins - ?", itemPrice)).
+		Where(squirrel.Eq{"username": username}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("building updating user coins query: %w", err)
+	}
+
+	_, err = tx.Exec(
+		ctx,
+		query,
+		args...,
+	)
+	if err != nil {
+		return fmt.Errorf("updating user \"%s\" coins: %w", username, err)
+	}
+
+	return nil
+}
+
+func (r *itemRepository) savePurchaseHistory(ctx context.Context, tx pgx.Tx, purchase *entity.Purchase) error {
+	query, args, err := r.builder.Insert("purchases").
+		Columns("username", "item").
+		Values(purchase.Username, purchase.ItemName).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("building creating purchase query: %w", err)
+	}
+
+	_, err = tx.Exec(
+		ctx,
+		query,
+		args...,
+	)
+	if err != nil {
+		return fmt.Errorf("creating user \"%s\" item \"%s\" purchase: %w",
+			purchase.Username, purchase.ItemName, err)
+	}
+
+	return nil
 }
