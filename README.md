@@ -14,12 +14,12 @@ docker-compose up -d
 * JWT авторизация
 * использование транзакций
 * явные блокировки строк (select ... for update)
-* линтеры ([.golangci.yaml](./.golangci.yaml ".golangci.yaml"), [результат работы линтеров после пуша](https://github.com/Mx1q/Avito-Backend-trainee-assignment-winter-2025/actions/workflows/golangci-lint.yml "результат работы линтеров"))
+* линтеры ([.golangci.yaml](./.golangci.yaml ".golangci.yaml"), [результат работы линтеров после пуша](https://github.com/Mx1q/Avito-Backend-trainee-assignment-winter-2025/actions/runs/13357691045/job/37302713606 "результат работы линтеров"))
 * автоматический запуск тестов и линтеров перед коммитом ([lefthook](./lefthook.yml "конфиг lefthook"))
 * логирование ошибок (zerolog)
 * построение запросов к БД с использованием билдера (squirrel)
 
-## Тесты ([результаты работы тестов после пуша](https://github.com/Mx1q/Avito-Backend-trainee-assignment-winter-2025/actions/workflows/go.yml "результаты работы тестов"))
+## Тесты ([результаты работы тестов после пуша](https://github.com/Mx1q/Avito-Backend-trainee-assignment-winter-2025/actions/runs/13357691045/job/37302713441 "результаты работы тестов"))
 * сервисы: покрытие 100% юнит тестами
 * репозитории: покрытие 79.3% интеграционными тестами (testcontainers)
 * обработчики: покрытие 77.4% e2e тестами (testcontainers), рассмотрены сценарии: покупки мерча, отправки монет, получения информации о монетах, инвентаре и истории транзакций и т.п.
