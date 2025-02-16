@@ -4,8 +4,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-const configPath = "config.yaml"
-
 type Config struct {
 	Logger   LoggerConfig   `yaml:"logger"`
 	HTTP     HTTPConfig     `yaml:"http"`
@@ -35,7 +33,7 @@ type Jwt struct {
 	Key string `yaml:"key"`
 }
 
-func ReadConfig() (*Config, error) {
+func ReadConfig(configPath string) (*Config, error) {
 	var config Config
 	viper.SetConfigFile(configPath)
 

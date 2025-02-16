@@ -25,7 +25,8 @@ const (
 )
 
 func main() {
-	cfg, err := config.ReadConfig()
+	configPath := os.Getenv("AVITO_SHOP_CONFIG_PATH")
+	cfg, err := config.ReadConfig(configPath)
 	if err != nil {
 		log.Fatalf("reading config error: %v\n", err)
 	}
