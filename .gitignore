@@ -27,3 +27,4 @@ go.work.sum
 .idea
 *.log
 .DS_Store
+__pycache__
