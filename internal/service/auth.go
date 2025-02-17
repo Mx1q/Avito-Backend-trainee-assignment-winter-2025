@@ -27,7 +27,7 @@ func NewAuthService(repo entity.IAuthRepository, logger logger.ILogger,
 	}
 }
 
-func isValid(authInfo *entity.Auth) error {
+func (s *AuthService) isValid(authInfo *entity.Auth) error {
 	if authInfo == nil {
 		return fmt.Errorf("pointer to struct is nil")
 	}
@@ -41,7 +41,7 @@ func isValid(authInfo *entity.Auth) error {
 }
 
 func (s *AuthService) Auth(ctx context.Context, authInfo *entity.Auth) (string, error) {
-	err := isValid(authInfo)
+	err := s.isValid(authInfo)
 	if err != nil {
 		s.logger.Warnf("User sent invalid data: %v", err)
 		return "", errs.InvalidData
